@@ -19,6 +19,12 @@ Requires tmux >= 3.3 (`display-popup -B`). Check with `tmux -V`.
     Enter              copy (no selection yet = copy the cursor's line)
     Esc  q  Ctrl-c     cancel
 
+## How a copy works
+`prefix + y` runs `regionsel popup`, which captures the pane *first*, writes the screen to a
+private (0600) snapshot file, then opens the popup on that snapshot. What you select is what
+you saw when you pressed the key, even if the app keeps repainting underneath.
+`scripts/e2e-popup.py` checks this in a real tmux.
+
 ## Developing detectors
     regionsel dump --pane %1 --row 10 --col 5
     scripts/record-fixture.sh <app> <case> [pane]    # -> tests/fixtures/<app>/<case>.{ansi,expected.json}
@@ -27,4 +33,5 @@ Requires tmux >= 3.3 (`display-popup -B`). Check with `tmux -V`.
     UPDATE_FIXTURES=1 cargo test --test fixtures     # rewrite snapshots; READ the diff before committing
 
 ## Status
-BorderDetector and BackgroundRunDetector are implemented in `src/detect.rs`.
+Detectors in `src/detect.rs`: Border (titled boxes too), BackgroundRun, Separator (reverse-video
+vim splits) and the IndentPrefix refiner (paragraphs, indented bodies).

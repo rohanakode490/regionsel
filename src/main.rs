@@ -1,4 +1,5 @@
 mod clipboard;
+mod snapshot;
 mod tmux;
 mod ui;
 
@@ -12,7 +13,9 @@ regionsel: region-aware copy for terminal screens
 
   regionsel init                      print the tmux.conf snippet
   regionsel popup <pane>              open the picker over a pane (used by the key binding)
-  regionsel pick --pane <pane>        the picker itself (runs inside the popup)
+  regionsel pick --pane <pane>        the picker itself (runs inside the popup; captures live)
+  regionsel pick --snapshot F --size WxH --cursor X,Y
+                                      the picker on a snapshot taken before the popup opened
   regionsel dump --pane <pane> [--row N --col N]
   regionsel dump --file F.ansi --size WxH [--row N --col N]
                                       print the expansion ladder; for developing detectors
@@ -61,22 +64,33 @@ fn cmd_popup(args: &[String]) -> Result<(), String> {
     let pane = args.first().ok_or("usage: regionsel popup <pane-id>")?;
     let info = tmux::pane_info(pane)?;
     let exe = env::current_exe().map_err(|e| e.to_string())?;
-    tmux::popup(&info, &exe.to_string_lossy())
+    // Capture NOW, before the popup exists: what you select is what you saw at the keypress.
+    let raw = tmux::capture(pane)?;
+    let snap = snapshot::write(&raw).map_err(|e| format!("cannot write snapshot: {e}"))?;
+    let result = tmux::popup(&info, &exe.to_string_lossy(), &snap);
+    let _ = fs::remove_file(&snap); // pick deletes it too; this covers a popup that never ran
+    result
 }
 
 fn cmd_pick(args: &[String]) -> Result<(), String> {
-    let pane = flag(args, "--pane").ok_or("usage: regionsel pick --pane <pane-id>")?;
-    let info = tmux::pane_info(pane)?;
-    // Refinement for later: capture in `popup` BEFORE the popup opens and pass a snapshot file,
-    // so what you select is exactly what you saw when you pressed the key.
-    let grid = ansi::grid_from_capture(&tmux::capture(pane)?, info.width, info.height);
+    let (grid, start) = if let Some(file) = flag(args, "--snapshot") {
+        let (w, h) = flag(args, "--size").and_then(snapshot::parse_size).ok_or("--snapshot needs --size WxH")?;
+        let (cx, cy) = flag(args, "--cursor").and_then(snapshot::parse_cursor).unwrap_or((0, 0));
+        let raw = snapshot::take(std::path::Path::new(file)).map_err(|e| format!("{file}: {e}"))?;
+        (ansi::grid_from_capture(&raw, w, h), Pos { row: cy.min(h.saturating_sub(1)), col: cx.min(w.saturating_sub(1)) })
+    } else {
+        let pane = flag(args, "--pane").ok_or("usage: regionsel pick --pane <pane-id> | --snapshot F --size WxH")?;
+        let info = tmux::pane_info(pane)?;
+        let grid = ansi::grid_from_capture(&tmux::capture(pane)?, info.width, info.height);
+        let start = Pos {
+            row: info.cursor_y.min(info.height.saturating_sub(1)),
+            col: info.cursor_x.min(info.width.saturating_sub(1)),
+        };
+        (grid, start)
+    };
     let engine = Engine::with_defaults();
     let analysis = engine.analyze(&grid);
 
-    let start = Pos {
-        row: info.cursor_y.min(info.height.saturating_sub(1)),
-        col: info.cursor_x.min(info.width.saturating_sub(1)),
-    };
     let picked = ui::run(&analysis, start).map_err(|e| format!("terminal error: {e}"))?;
 
     if let Some(text) = picked {

@@ -3,7 +3,6 @@
 use std::process::Command;
 
 pub struct PaneInfo {
-    pub id: String,
     pub left: u16,
     pub top: u16,
     pub width: u16,
@@ -32,7 +31,6 @@ pub fn pane_info(target: &str) -> Result<PaneInfo, String> {
     }
     let num = |i: usize| n[i].parse::<u16>().map_err(|e| format!("bad number {:?}: {e}", n[i]));
     Ok(PaneInfo {
-        id: n[0].to_string(),
         left: num(1)?,
         top: num(2)?,
         width: num(3)?,
@@ -80,14 +78,23 @@ fn sh_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', "'\\''"))
 }
 
-/// Open a borderless popup exactly over the pane and run `regionsel pick` in it.
-pub fn popup(info: &PaneInfo, exe: &str) -> Result<(), String> {
+/// Open a borderless popup exactly over the pane and run `regionsel pick` on the snapshot
+/// that was captured before this call.
+pub fn popup(info: &PaneInfo, exe: &str, snapshot: &std::path::Path) -> Result<(), String> {
     match version() {
         Some(v) if v >= (3, 3) => {}
         Some((a, b)) => return Err(format!("needs tmux >= 3.3 for display-popup -B (found {a}.{b})")),
         None => return Err("cannot parse `tmux -V`".into()),
     }
-    let cmd = format!("{} pick --pane {}", sh_quote(exe), sh_quote(&info.id));
+    let cmd = format!(
+        "{} pick --snapshot {} --size {}x{} --cursor {},{}",
+        sh_quote(exe),
+        sh_quote(&snapshot.to_string_lossy()),
+        info.width,
+        info.height,
+        info.cursor_x,
+        info.cursor_y
+    );
     let (x, y) = (info.left.to_string(), (info.top + status_top_offset()).to_string());
     let (w, h) = (info.width.to_string(), info.height.to_string());
     tmux(&["display-popup", "-B", "-E", "-x", &x, "-y", &y, "-w", &w, "-h", &h, &cmd]).map(|_| ())
