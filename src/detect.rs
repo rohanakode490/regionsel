@@ -574,6 +574,17 @@ impl Refiner for IndentPrefixDetector {
                     .map(|c| c - area.col0)
             })
             .collect();
+        // A row that is nothing but a horizontal line (`────`): a divider, not text.
+        let is_rule: Vec<bool> = (area.row0..area.row1)
+            .map(|r| {
+                let ink: Vec<char> = (area.col0..area.col1)
+                    .map(|c| grid.get(r, c))
+                    .filter(|cell| cell.width > 0 && !is_blank(cell))
+                    .map(|cell| cell.ch)
+                    .collect();
+                ink.len() >= 3 && ink.iter().all(|c| matches!(c, '─' | '━' | '═'))
+            })
+            .collect();
         let rect = |i0: usize, i1: usize| Rect {
             row0: area.row0 + i0 as u16,
             col0: area.col0,
@@ -585,13 +596,16 @@ impl Refiner for IndentPrefixDetector {
         // 1. Paragraphs.
         let mut runs: Vec<(usize, usize)> = Vec::new();
         let mut i = 0;
+        // Rules end a run like a blank row does; unlike blanks they also stay out of bodies
+        // (their indent is Some(0), so `is_body` below already stops at them).
+        let in_text = |i: usize| indent[i].is_some() && !is_rule[i];
         while i < indent.len() {
-            if indent[i].is_none() {
+            if !in_text(i) {
                 i += 1;
                 continue;
             }
             let start = i;
-            while i < indent.len() && indent[i].is_some() {
+            while i < indent.len() && in_text(i) {
                 i += 1;
             }
             runs.push((start, i));
@@ -1038,6 +1052,44 @@ mod tests {
             30,
         );
         assert_eq!(block_rects(&g), vec![rect(2, 0, 6, 30)]); // starts at the marker row
+    }
+
+    fn paragraph_rects(g: &Grid) -> Vec<Rect> {
+        IndentPrefixDetector::default()
+            .refine(g, g.bounds())
+            .iter()
+            .filter(|c| c.kind == RegionKind::Paragraph)
+            .map(|c| c.outer)
+            .collect()
+    }
+
+    #[test]
+    fn a_horizontal_rule_row_separates_paragraphs() {
+        let rule = "\u{2500}".repeat(30);
+        let g = grid_lines(
+            &[
+                "status line",
+                "                  hint here",
+                rule.as_str(),
+                "first",
+                "second",
+                rule.as_str(),
+                "  footer one",
+                "  footer two",
+            ],
+            30,
+        );
+        assert_eq!(
+            paragraph_rects(&g),
+            vec![rect(0, 0, 2, 30), rect(3, 0, 5, 30), rect(6, 0, 8, 30)]
+        );
+    }
+
+    #[test]
+    fn short_or_mixed_dash_rows_are_not_rules() {
+        // A rule must span the row: a short dash run inside text, or a table row, is just text.
+        let g = grid_lines(&["a b", "\u{2500}\u{2500}\u{2500} x", "c d"], 30);
+        assert_eq!(paragraph_rects(&g), vec![]); // one run only: no split at all
     }
 
     #[test]

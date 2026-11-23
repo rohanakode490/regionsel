@@ -12,10 +12,6 @@
           "text": "Accessing workspace:"
         },
         {
-          "kind": "Paragraph",
-          "text": "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Accessing workspace:"
-        },
-        {
           "kind": "Pane",
           "text": "\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Accessing workspace:\n\n /tmp/scratch/example-project\n\n Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open source\n project, or work from your team). If not, take a moment to review what's in this folder first.\n\n Claude Code'll be able to read, edit, and execute files here.\n\n Security guide\n\n ❯ No, exit\n   Yes, I trust this folder\n\n Enter to confirm · Esc to cancel\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         }

@@ -1,6 +1,5 @@
 {
-  "known_issue": "BUG: the Paragraph step spans from the '✻ Cooked' status row through the status bar and joins the 'ctrl+g to edit' hint onto the rule line. Snapshot records current (wrong) behaviour. (The marker-row bug that dropped the first draft line is fixed.)",
-  "note": "recorded 2026-11-23 from tmux 3.4; app: claude-code",
+  "note": "recorded 2026-11-23 from tmux 3.4; app: claude-code; rules (────) separate paragraphs; the draft box is one Block without its ❯ marker (both were bugs, fixed)",
   "probes": [
     {
       "ladder": [
@@ -11,10 +10,6 @@
         {
           "kind": "Block",
           "text": "first line of a draft\nsecond line of the draft\nthird line, no newline after this"
-        },
-        {
-          "kind": "Paragraph",
-          "text": "✻ Cooked for 6s · done 6:20 PM\n                                                               ctrl+g to edit in VS Code ──────────────────────────────────────────────────────────────────────────────────────────\n❯ first line of a draft\n  second line of the draft\n  third line, no newline after this\n──────────────────────────────────────────────────────────────────────────────────────────\n  ⏵⏵ auto mode on (shift+tab to cycle)"
         },
         {
           "kind": "Pane",
@@ -39,10 +34,6 @@
         {
           "kind": "Block",
           "text": "first line of a draft\nsecond line of the draft\nthird line, no newline after this"
-        },
-        {
-          "kind": "Paragraph",
-          "text": "✻ Cooked for 6s · done 6:20 PM\n                                                               ctrl+g to edit in VS Code ──────────────────────────────────────────────────────────────────────────────────────────\n❯ first line of a draft\n  second line of the draft\n  third line, no newline after this\n──────────────────────────────────────────────────────────────────────────────────────────\n  ⏵⏵ auto mode on (shift+tab to cycle)"
         },
         {
           "kind": "Pane",
