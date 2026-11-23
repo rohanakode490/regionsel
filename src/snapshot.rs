@@ -46,6 +46,14 @@ pub fn take(path: &Path) -> std::io::Result<String> {
     raw
 }
 
+/// Number of screen rows in a `capture-pane` dump (one per line; a final newline is not a row).
+pub fn count_rows(raw: &str) -> usize {
+    if raw.is_empty() {
+        return 0;
+    }
+    raw.strip_suffix('\n').unwrap_or(raw).split('\n').count()
+}
+
 /// "120x40" -> (120, 40)
 pub fn parse_size(s: &str) -> Option<(u16, u16)> {
     let (w, h) = s.split_once('x')?;
@@ -88,6 +96,14 @@ mod tests {
         fs::write(&p, [0xff, 0xfe]).unwrap();
         assert!(take(&p).is_err());
         assert!(!p.exists());
+    }
+
+    #[test]
+    fn counts_rows_like_the_grid_parser_sees_them() {
+        assert_eq!(count_rows(""), 0);
+        assert_eq!(count_rows("a\nb\n"), 2);
+        assert_eq!(count_rows("a\n\n"), 2); // a blank last row is still a row
+        assert_eq!(count_rows("a\nb"), 2);
     }
 
     #[test]

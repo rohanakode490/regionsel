@@ -9,6 +9,8 @@ pub struct PaneInfo {
     pub height: u16,
     pub cursor_x: u16,
     pub cursor_y: u16,
+    /// Lines of scrollback above the visible screen.
+    pub history: u32,
 }
 
 pub fn tmux(args: &[&str]) -> Result<String, String> {
@@ -23,10 +25,10 @@ pub fn tmux(args: &[&str]) -> Result<String, String> {
 }
 
 pub fn pane_info(target: &str) -> Result<PaneInfo, String> {
-    let fmt = "#{pane_id} #{pane_left} #{pane_top} #{pane_width} #{pane_height} #{cursor_x} #{cursor_y}";
+    let fmt = "#{pane_id} #{pane_left} #{pane_top} #{pane_width} #{pane_height} #{cursor_x} #{cursor_y} #{history_size}";
     let out = tmux(&["display-message", "-p", "-t", target, fmt])?;
     let n: Vec<&str> = out.split_whitespace().collect();
-    if n.len() != 7 {
+    if n.len() != 8 {
         return Err(format!("unexpected display-message output: {out:?}"));
     }
     let num = |i: usize| n[i].parse::<u16>().map_err(|e| format!("bad number {:?}: {e}", n[i]));
@@ -37,6 +39,7 @@ pub fn pane_info(target: &str) -> Result<PaneInfo, String> {
         height: num(4)?,
         cursor_x: num(5)?,
         cursor_y: num(6)?,
+        history: n[7].parse::<u32>().map_err(|e| format!("bad number {:?}: {e}", n[7]))?,
     })
 }
 
@@ -44,6 +47,15 @@ pub fn pane_info(target: &str) -> Result<PaneInfo, String> {
 /// Deliberately NOT -J: we want physical rows, not tmux's idea of joined lines.
 pub fn capture(target: &str) -> Result<String, String> {
     tmux(&["capture-pane", "-p", "-e", "-N", "-t", target])
+}
+
+/// Like `capture`, plus up to `history` lines of scrollback above the visible screen.
+pub fn capture_with_history(target: &str, history: u32) -> Result<String, String> {
+    if history == 0 {
+        return capture(target);
+    }
+    let start = format!("-{history}");
+    tmux(&["capture-pane", "-p", "-e", "-N", "-S", &start, "-t", target])
 }
 
 pub fn message(text: &str) {
@@ -78,22 +90,31 @@ fn sh_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', "'\\''"))
 }
 
+/// What `pick` needs to know about a snapshot besides its path.
+pub struct PickArgs {
+    pub cols: u16,
+    pub rows: u16, // history + visible rows in the snapshot
+    pub cursor: (u16, u16),
+    pub click: bool, // start with the cursor cell selected (mouse launch)
+}
+
 /// Open a borderless popup exactly over the pane and run `regionsel pick` on the snapshot
 /// that was captured before this call.
-pub fn popup(info: &PaneInfo, exe: &str, snapshot: &std::path::Path) -> Result<(), String> {
+pub fn popup(info: &PaneInfo, exe: &str, snapshot: &std::path::Path, pick: &PickArgs) -> Result<(), String> {
     match version() {
         Some(v) if v >= (3, 3) => {}
         Some((a, b)) => return Err(format!("needs tmux >= 3.3 for display-popup -B (found {a}.{b})")),
         None => return Err("cannot parse `tmux -V`".into()),
     }
     let cmd = format!(
-        "{} pick --snapshot {} --size {}x{} --cursor {},{}",
+        "{} pick --snapshot {} --size {}x{} --cursor {},{}{}",
         sh_quote(exe),
         sh_quote(&snapshot.to_string_lossy()),
-        info.width,
-        info.height,
-        info.cursor_x,
-        info.cursor_y
+        pick.cols,
+        pick.rows,
+        pick.cursor.0,
+        pick.cursor.1,
+        if pick.click { " --click" } else { "" }
     );
     let (x, y) = (info.left.to_string(), (info.top + status_top_offset()).to_string());
     let (w, h) = (info.width.to_string(), info.height.to_string());

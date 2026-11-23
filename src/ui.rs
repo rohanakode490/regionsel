@@ -3,7 +3,10 @@
 
 use std::io::{self, Write};
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{
+    self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
+    MouseButton, MouseEventKind,
+};
 use crossterm::style::{
     Attribute, Color as CtColor, Print, ResetColor, SetAttribute, SetBackgroundColor,
     SetForegroundColor,
@@ -11,28 +14,40 @@ use crossterm::style::{
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::{cursor, execute, queue};
 
+use regionsel::view::Viewport;
 use regionsel::{Action, Analysis, Attrs, Color, Key, Pos, Session};
 
+/// Rows moved per mouse-wheel notch.
+const WHEEL_ROWS: i32 = 3;
+
 /// Returns Some(text) if the user pressed Enter, None if they cancelled.
-pub fn run(analysis: &Analysis, start: Pos) -> io::Result<Option<String>> {
+/// `click_start`: the popup was opened by a mouse click, so start with that cell selected.
+pub fn run(analysis: &Analysis, start: Pos, click_start: bool) -> io::Result<Option<String>> {
     let mut out = io::stdout();
     terminal::enable_raw_mode()?;
-    execute!(out, EnterAlternateScreen, cursor::Hide)?;
-    let result = event_loop(&mut out, analysis, start);
+    execute!(out, EnterAlternateScreen, EnableMouseCapture, cursor::Hide)?;
+    let result = event_loop(&mut out, analysis, start, click_start);
     // Always restore the terminal, even if the loop errored.
-    let _ = execute!(out, cursor::Show, LeaveAlternateScreen);
+    let _ = execute!(out, cursor::Show, DisableMouseCapture, LeaveAlternateScreen);
     let _ = terminal::disable_raw_mode();
     result
 }
 
-fn event_loop(out: &mut impl Write, analysis: &Analysis, start: Pos) -> io::Result<Option<String>> {
+fn event_loop(out: &mut impl Write, analysis: &Analysis, start: Pos, click_start: bool) -> io::Result<Option<String>> {
+    let grid = analysis.grid;
+    let (tw, th) = terminal::size()?;
+    let mut view = Viewport::new(grid.cols, grid.rows, tw, th);
     let mut session = Session::new(analysis, start);
+    if click_start {
+        session.click(start);
+    }
+    view.follow(session.cursor());
     let mut keymap = Keymap::default();
-    draw(out, analysis, &session)?;
+    draw(out, analysis, &session, &view)?;
     loop {
         match event::read()? {
             Event::Key(k) if k.kind != KeyEventKind::Release => {
-                if let Some((key, repeat)) = keymap.feed(k) {
+                if let Some((key, repeat)) = keymap.feed(k, u32::from(view.height)) {
                     for _ in 0..repeat {
                         match session.handle(key) {
                             Action::Copy(text) => return Ok(Some(text)),
@@ -40,10 +55,35 @@ fn event_loop(out: &mut impl Write, analysis: &Analysis, start: Pos) -> io::Resu
                             Action::Redraw | Action::None => {}
                         }
                     }
-                    draw(out, analysis, &session)?;
+                    view.follow(session.cursor());
+                    draw(out, analysis, &session, &view)?;
                 }
             }
-            Event::Resize(..) => draw(out, analysis, &session)?,
+            Event::Mouse(m) => match m.kind {
+                MouseEventKind::Down(MouseButton::Left) => {
+                    // Any left click works inside the popup; Alt is only needed to OPEN it.
+                    if let Some(p) = view.to_grid(m.column, m.row) {
+                        session.click(p);
+                        view.follow(session.cursor());
+                        draw(out, analysis, &session, &view)?;
+                    }
+                }
+                // The wheel scrolls the view and leaves the cursor and selection alone.
+                MouseEventKind::ScrollUp => {
+                    view.scroll_rows(-WHEEL_ROWS);
+                    draw(out, analysis, &session, &view)?;
+                }
+                MouseEventKind::ScrollDown => {
+                    view.scroll_rows(WHEEL_ROWS);
+                    draw(out, analysis, &session, &view)?;
+                }
+                _ => {}
+            },
+            Event::Resize(w, h) => {
+                view.resize(w, h);
+                view.follow(session.cursor());
+                draw(out, analysis, &session, &view)?;
+            }
             _ => {}
         }
     }
@@ -60,8 +100,18 @@ struct Keymap {
 }
 
 impl Keymap {
-    fn feed(&mut self, ev: KeyEvent) -> Option<(Key, u32)> {
+    /// `page`: rows on screen, for the page-wise scroll keys.
+    fn feed(&mut self, ev: KeyEvent, page: u32) -> Option<(Key, u32)> {
         let ctrl = ev.modifiers.contains(KeyModifiers::CONTROL);
+        let half = (page / 2).max(1);
+        let page = page.saturating_sub(1).max(1); // keep one row of context, like vim
+        match (ev.code, ctrl) {
+            (KeyCode::Char('d'), true) => return self.scroll(Key::Down, half),
+            (KeyCode::Char('u'), true) => return self.scroll(Key::Up, half),
+            (KeyCode::Char('f'), true) | (KeyCode::PageDown, _) => return self.scroll(Key::Down, page),
+            (KeyCode::Char('b'), true) | (KeyCode::PageUp, _) => return self.scroll(Key::Up, page),
+            _ => {}
+        }
 
         if self.pending_g {
             self.pending_g = false;
@@ -104,6 +154,13 @@ impl Keymap {
         self.emit(key)
     }
 
+    /// Half/full page keys move the cursor `n` rows; the viewport follows it.
+    fn scroll(&mut self, key: Key, n: u32) -> Option<(Key, u32)> {
+        self.pending_g = false;
+        self.count = None;
+        Some((key, n))
+    }
+
     fn emit(&mut self, key: Key) -> Option<(Key, u32)> {
         let n = self.count.take().unwrap_or(1).clamp(1, 9999);
         let repeatable = matches!(
@@ -124,21 +181,25 @@ fn to_ct(c: Color) -> CtColor {
     }
 }
 
-fn draw(out: &mut impl Write, analysis: &Analysis, session: &Session) -> io::Result<()> {
+fn draw(out: &mut impl Write, analysis: &Analysis, session: &Session, view: &Viewport) -> io::Result<()> {
     let grid = analysis.grid;
-    let (term_w, term_h) = terminal::size()?;
-    let (rows, cols) = (grid.rows.min(term_h), grid.cols.min(term_w)); // clip; no scrolling yet
+    let (term_w, term_h) = (view.width, view.height);
     let hl = session.highlight();
     let cur = session.cursor();
 
-    for r in 0..rows {
-        queue!(out, cursor::MoveTo(0, r))?;
+    for y in 0..view.visible_rows() {
+        let r = view.top + y;
+        queue!(out, cursor::MoveTo(0, y))?;
         let mut last: Option<(Color, Color, Attrs, bool)> = None;
-        for c in 0..cols {
+        for x in 0..view.visible_cols() {
+            let c = view.left + x;
             let cell = grid.get(r, c);
-            if cell.width == 0 {
-                continue; // continuation half of a wide char
-            }
+            // The left half of a wide char can be scrolled off: show a blank, not a gap.
+            let ch = if cell.width == 0 {
+                if x == 0 { ' ' } else { continue } // continuation half of a wide char
+            } else {
+                cell.ch
+            };
             let selected = hl.iter().any(|h| h.contains(r, c));
             let is_cursor = r == cur.row && c == cur.col;
             // Selection = reverse video. The cursor flips whatever is under it, so it stays
@@ -167,14 +228,22 @@ fn draw(out: &mut impl Write, analysis: &Analysis, session: &Session) -> io::Res
                 }
                 last = Some(style);
             }
-            queue!(out, Print(cell.ch))?;
+            queue!(out, Print(ch))?;
         }
         queue!(out, SetAttribute(Attribute::Reset), ResetColor)?;
     }
+    // Rows below the grid (a screen taller than the grid): clear leftovers.
+    for y in view.visible_rows()..term_h {
+        queue!(out, cursor::MoveTo(0, y), terminal::Clear(terminal::ClearType::CurrentLine))?;
+    }
 
     // Status tag, bottom-right. (Covers a few cells of the last row; a real status line
-    // would need the popup to be one row taller than the pane.)
-    let tag = format!(" {} ", session.status());
+    // would need the popup to be one row taller than the pane.) When the grid is bigger
+    // than the screen it also shows where the cursor is.
+    let mut tag = format!(" {} ", session.status());
+    if grid.rows > term_h {
+        tag = format!(" {} {}/{} ", session.status(), cur.row + 1, grid.rows);
+    }
     let len = tag.chars().count() as u16;
     if term_h > 0 && term_w >= len {
         queue!(

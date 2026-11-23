@@ -9,6 +9,7 @@
 
 pub mod ansi;
 pub mod detect;
+pub mod view;
 
 // ───────────────────────── 1. Input model ─────────────────────────
 
@@ -608,6 +609,30 @@ impl<'a, 'g> Session<'a, 'g> {
         }
     }
 
+    /// A mouse click. In Semantic mode it GROWS the selection one level when it lands inside
+    /// the current highlight (and it can still grow), and otherwise selects the smallest thing under the pointer
+    /// (so one click picks a word, a second click on it picks the line, and so on). In the
+    /// manual visual modes it just moves the cursor, extending the selection.
+    /// Clicks outside the grid are ignored.
+    pub fn click(&mut self, p: Pos) -> Action {
+        let g = self.analysis.grid;
+        if p.row >= g.rows || p.col >= g.cols {
+            return Action::None;
+        }
+        if self.mode != Mode::Semantic {
+            return self.move_to(p);
+        }
+        if let Some(i) = self.level {
+            // Grow while there is something bigger; at the top of the ladder a click starts over.
+            if i + 1 < self.ladder.len() && self.ladder[i].rect.contains(p.row, p.col) {
+                return self.handle(Key::Expand);
+            }
+        }
+        self.set_cursor(p);
+        self.level = if self.ladder.is_empty() { None } else { Some(0) };
+        Action::Redraw
+    }
+
     /// Rectangles to draw as selected (reverse video). Empty = just show the cursor.
     pub fn highlight(&self) -> Vec<Rect> {
         let c = self.cursor;
@@ -802,6 +827,34 @@ mod selection_tests {
         s.handle(Key::VisualChar);
         s.handle(Key::Down);
         assert_eq!(s.selected_text(), "world\nsecond");
+    }
+
+    #[test]
+    fn click_selects_then_grows_inside_the_selection_then_restarts_elsewhere() {
+        let g = grid_from(&["hello world", "second line"]);
+        let a = Engine::with_defaults().analyze(&g);
+        let mut s = Session::new(&a, Pos { row: 1, col: 0 });
+        s.click(Pos { row: 0, col: 1 });
+        assert_eq!(s.selected_text(), "hello"); // first click: the word
+        s.click(Pos { row: 0, col: 3 }); // another cell of the same word: grow
+        assert_eq!(s.selected_text(), "hello world");
+        s.click(Pos { row: 0, col: 9 }); // inside the line selection: grow again
+        assert_eq!(s.highlight(), vec![g.bounds()]);
+        s.click(Pos { row: 1, col: 8 }); // outside the old selection: start over
+        assert_eq!(s.selected_text(), "line");
+        assert_eq!(s.cursor(), Pos { row: 1, col: 8 });
+    }
+
+    #[test]
+    fn click_outside_the_grid_is_ignored_and_visual_mode_just_moves() {
+        let g = grid_from(&["hello world", "second line"]);
+        let a = Engine::with_defaults().analyze(&g);
+        let mut s = Session::new(&a, Pos { row: 0, col: 0 });
+        assert_eq!(s.click(Pos { row: 5, col: 0 }), Action::None);
+        assert_eq!(s.status(), "NORMAL");
+        s.handle(Key::VisualChar);
+        s.click(Pos { row: 1, col: 5 });
+        assert_eq!(s.selected_text(), "hello world\nsecond");
     }
 
     #[test]

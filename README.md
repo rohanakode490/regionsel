@@ -17,7 +17,20 @@ Requires tmux >= 3.3 (`display-popup -B`). Check with `tmux -V`.
     Space / Backspace  expand / shrink semantic selection (word > line > region > pane)
     v  V  Ctrl-v       manual char / line / block selection (literal copy)
     Enter              copy (no selection yet = copy the cursor's line)
+    Ctrl-d Ctrl-u      half page down / up       Ctrl-f Ctrl-b  PgDn PgUp   full page
     Esc  q  Ctrl-c     cancel
+
+## Scrollback and mouse
+The popup captures up to 2000 lines of history above the visible screen (`popup <pane>
+--scrollback N`, 0 = visible screen only). It opens showing exactly what the pane showed; scroll
+up with the keys above or the mouse wheel. The top rung of the ladder ("Pane") is everything that
+was captured, history included. The screen can be smaller than the pane (tmux shrinks popups that
+don't fit); the view then scrolls with the cursor, in both directions.
+
+Mouse: `regionsel init` prints an optional `Alt+click` binding (needs `set -g mouse on`). Alt+click
+opens the picker with the clicked word selected. Inside the popup, click inside the highlighted
+selection to grow it one level (word > line > block > pane), or click elsewhere to start over
+there. In v / V / Ctrl-v modes a click moves the cursor.
 
 ## How a copy works
 `prefix + y` runs `regionsel popup`, which captures the pane *first*, writes the screen to a

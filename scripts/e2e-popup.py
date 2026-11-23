@@ -5,7 +5,9 @@
 
 Runs on its own tmux server (-L rsfix, no config) with a client attached to a pty, so your
 sessions are untouched. Checks: pick reads the snapshot instead of the live pane, snapshots
-are deleted, and a pane cleared AFTER the keypress still copies the screen as it was.
+are deleted, a pane cleared AFTER the keypress still copies the screen as it was, scrollback
+is reachable, and an Alt+click opens the popup with the clicked word selected (a second click
+inside the popup grows the selection one level).
 """
 import os, pty, subprocess, sys, time, fcntl, termios, struct, glob, shutil, tempfile
 EXE=os.path.abspath("target/release/regionsel")
@@ -64,6 +66,57 @@ os.write(fd,b"k"); time.sleep(0.2); os.write(fd,b"\r"); time.sleep(1.2); drain()
 buf=tm("show-buffer").stdout
 results.append(("D live pane no longer has the marker (precondition)", "LIVE-MARKER-ONE" not in live))
 results.append(("D copy still returns the screen as of the keypress", "LIVE-MARKER-ONE" in buf))
+# ---- Test E: scrollback. 150 lines scroll off; `gg` must reach the OLDEST captured line
+tm("delete-buffer")
+tm("send-keys","-t","fx","clear; seq 1 150","Enter"); time.sleep(0.8)
+oldest=tm("capture-pane","-p","-S","-2000","-t","fx").stdout.split("\n")[0].rstrip()
+hist=int(tm("display-message","-p","-t","fx","#{history_size}").stdout)
+subprocess.Popen(T+["run-shell","-b",f"{EXE} popup {pane}"],env=env)
+time.sleep(1.2)
+os.write(fd,b"gg"); time.sleep(0.3); os.write(fd,b"\r"); time.sleep(1.2); drain()
+buf=tm("show-buffer").stdout.rstrip()
+results.append((f"E scrollback: gg copies the oldest history line ({oldest!r}, history={hist})", hist>50 and buf==oldest))
+# ---- Test F/G: Alt+click opens the popup with the word selected; a click in the popup grows it
+tm("set","-g","mouse","on")
+tm("bind-key","-n","M-MouseDown1Pane","run-shell","-b",f"{EXE} popup '#{{pane_id}}' --click '#{{mouse_x}},#{{mouse_y}}'")
+tm("send-keys","-t","fx","clear; echo alpha beta gamma","Enter"); time.sleep(0.8)
+rows=[l for l in tm("capture-pane","-p","-t","fx").stdout.split("\n")]
+row=[i for i,l in enumerate(rows) if l.startswith("alpha beta gamma")][0]
+col=rows[row].index("beta")+1              # a cell inside "beta"
+def sgr(btn,x,y,down): return f"\x1b[<{btn};{x+1};{y+1}{'M' if down else 'm'}".encode()
+tm("delete-buffer")
+os.write(fd,sgr(8,col,row,True)+sgr(8,col,row,False)); time.sleep(1.5)   # Alt+click (button 0 + alt bit 8)
+os.write(fd,b"\r"); time.sleep(1.2); drain()
+results.append(("F Alt+click opens the popup with the clicked word selected", tm("show-buffer").stdout.strip()=="beta"))
+tm("delete-buffer")
+os.write(fd,sgr(8,col,row,True)+sgr(8,col,row,False)); time.sleep(1.5)
+os.write(fd,sgr(0,col,row,True)+sgr(0,col,row,False)); time.sleep(0.5)   # plain click inside the popup
+os.write(fd,b"\r"); time.sleep(1.2); drain()
+results.append(("G second click inside the popup grows word -> line", tm("show-buffer").stdout.strip()=="alpha beta gamma"))
+# ---- Test H: the viewport. A 120x40 snapshot shown in a 60x10 screen must scroll, not clip.
+# Own tmux server, no client attached: with a client attached tmux would size the window to it.
+V=["/usr/bin/tmux","-L","rsvp","-f","/dev/null"]
+def vm(*a): return subprocess.run(V+list(a),env=env,capture_output=True,text=True)
+vm("kill-server")
+snap2=f"{RT}/big.ansi"
+open(snap2,"w").write("\n".join(f"ROW {r:03d} " + "x"*100 + "|END" for r in range(40)) + "\n")
+vm("new-session","-d","-s","vp","-x","60","-y","10",f"{EXE} pick --snapshot {snap2} --size 120x40 --cursor 5,39")
+time.sleep(1.0)
+def screen(): return vm("capture-pane","-p","-t","vp").stdout
+def keys(*k): vm("send-keys","-t","vp",*k); time.sleep(0.4)
+sc=screen()
+results.append(("H precondition: the screen really is 10 rows", len(sc.rstrip("\n").split("\n"))==10))
+results.append(("H starts bottom-aligned: rows 30..39 shown, 29 and 0 not", "ROW 039" in sc and "ROW 030" in sc and "ROW 029" not in sc and "ROW 000" not in sc))
+results.append(("H status tag shows cursor row / total rows", "40/40" in sc))
+keys("g","g"); sc=screen()
+results.append(("H gg scrolls to the top", "ROW 000" in sc and "ROW 009" in sc and "ROW 010" not in sc and " 1/40" in sc))
+keys("$"); sc=screen()
+results.append(("H $ scrolls horizontally to the line end", "|END" in sc))
+keys("C-d"); sc=screen()
+results.append(("H Ctrl-d moves half a page down (row 6 of 40)", " 6/40" in sc))
+keys("G"); keys("C-u"); sc=screen()
+results.append(("H Ctrl-u from the bottom moves half a page up (row 35)", "35/40" in sc))
+vm("kill-server")
 tm("kill-server")
 for n,ok in results: print(("PASS " if ok else "FAIL ")+n)
 shutil.rmtree(RT,ignore_errors=True)
