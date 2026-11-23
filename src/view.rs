@@ -20,7 +20,14 @@ impl Viewport {
     /// Starts bottom-aligned (the live screen is at the bottom of the scrollback) and
     /// left-aligned.
     pub fn new(grid_cols: u16, grid_rows: u16, width: u16, height: u16) -> Self {
-        let mut v = Viewport { top: 0, left: 0, width, height, grid_cols, grid_rows };
+        let mut v = Viewport {
+            top: 0,
+            left: 0,
+            width,
+            height,
+            grid_cols,
+            grid_rows,
+        };
         v.top = grid_rows.saturating_sub(height);
         v
     }

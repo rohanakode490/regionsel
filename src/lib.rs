@@ -43,7 +43,13 @@ pub struct Cell {
 
 impl Default for Cell {
     fn default() -> Self {
-        Cell { ch: ' ', width: 1, fg: Color::Default, bg: Color::Default, attrs: Attrs::default() }
+        Cell {
+            ch: ' ',
+            width: 1,
+            fg: Color::Default,
+            bg: Color::Default,
+            attrs: Attrs::default(),
+        }
     }
 }
 
@@ -55,7 +61,11 @@ pub struct Grid {
 
 impl Grid {
     pub fn new(cols: u16, rows: u16) -> Self {
-        Grid { cols, rows, cells: vec![Cell::default(); cols as usize * rows as usize] }
+        Grid {
+            cols,
+            rows,
+            cells: vec![Cell::default(); cols as usize * rows as usize],
+        }
     }
     pub fn get(&self, row: u16, col: u16) -> &Cell {
         &self.cells[row as usize * self.cols as usize + col as usize]
@@ -65,7 +75,12 @@ impl Grid {
         self.cells[i] = cell;
     }
     pub fn bounds(&self) -> Rect {
-        Rect { row0: 0, col0: 0, row1: self.rows, col1: self.cols }
+        Rect {
+            row0: 0,
+            col0: 0,
+            row1: self.rows,
+            col1: self.cols,
+        }
     }
     // Building a Grid from `tmux capture-pane -p -e` output (ANSI SGR) or from a
     // `vt100` screen lives in the frontend crate, not here:
@@ -88,8 +103,12 @@ pub struct Rect {
 }
 
 impl Rect {
-    pub fn width(&self) -> u16 { self.col1 - self.col0 }
-    pub fn area(&self) -> u32 { (self.row1 - self.row0) as u32 * self.width() as u32 }
+    pub fn width(&self) -> u16 {
+        self.col1 - self.col0
+    }
+    pub fn area(&self) -> u32 {
+        (self.row1 - self.row0) as u32 * self.width() as u32
+    }
     pub fn contains(&self, row: u16, col: u16) -> bool {
         row >= self.row0 && row < self.row1 && col >= self.col0 && col < self.col1
     }
@@ -161,8 +180,12 @@ pub struct RegionTree {
 }
 
 impl RegionTree {
-    pub fn get(&self, id: RegionId) -> &Region { &self.regions[id.0] }
-    pub fn regions(&self) -> &[Region] { &self.regions }
+    pub fn get(&self, id: RegionId) -> &Region {
+        &self.regions[id.0]
+    }
+    pub fn regions(&self) -> &[Region] {
+        &self.regions
+    }
 
     /// Innermost-first chain of regions containing `p` (the "expansion ladder" backbone).
     pub fn chain_at(&self, p: Pos) -> Vec<RegionId> {
@@ -173,7 +196,11 @@ impl RegionTree {
         }
         loop {
             chain.push(cur);
-            let next = self.get(cur).children.iter().copied()
+            let next = self
+                .get(cur)
+                .children
+                .iter()
+                .copied()
                 .find(|&c| self.get(c).outer.contains(p.row, p.col));
             match next {
                 Some(c) => cur = c,
@@ -186,7 +213,11 @@ impl RegionTree {
 
     fn deepest_containing(&self, r: &Rect) -> RegionId {
         let mut cur = RegionId(0);
-        while let Some(c) = self.get(cur).children.iter().copied()
+        while let Some(c) = self
+            .get(cur)
+            .children
+            .iter()
+            .copied()
             .find(|&c| self.get(c).outer.contains_rect(r))
         {
             cur = c;
@@ -225,8 +256,6 @@ pub trait Refiner: Send + Sync {
 // The detectors live in `detect.rs`.
 pub use detect::{BackgroundRunDetector, BorderDetector, IndentPrefixDetector, SeparatorDetector};
 
-
-
 /// Merge candidates into a containment tree. Larger first; partial overlaps lose to
 /// whatever was inserted first (higher confidence among equal areas).
 pub fn build_tree(root: Rect, mut cands: Vec<Candidate>, min_conf: f32) -> RegionTree {
@@ -245,7 +274,10 @@ pub fn build_tree(root: Rect, mut cands: Vec<Candidate>, min_conf: f32) -> Regio
     };
     cands.retain(|c| c.confidence >= min_conf);
     cands.sort_by(|a, b| {
-        b.outer.area().cmp(&a.outer.area()).then(b.confidence.total_cmp(&a.confidence))
+        b.outer
+            .area()
+            .cmp(&a.outer.area())
+            .then(b.confidence.total_cmp(&a.confidence))
     });
     for c in cands {
         if tree.regions.iter().any(|r| r.outer.crosses(&c.outer)) {
@@ -286,12 +318,22 @@ impl ExtractOptions {
     pub fn for_kind(kind: RegionKind) -> Self {
         match kind {
             // A single line has no relative indentation to preserve: strip its padding.
-            RegionKind::Word | RegionKind::Line => {
-                ExtractOptions { trim_trailing_ws: true, dedent: true, unwrap: false }
-            }
+            RegionKind::Word | RegionKind::Line => ExtractOptions {
+                trim_trailing_ws: true,
+                dedent: true,
+                unwrap: false,
+            },
             // Code keeps its indentation (relative structure matters).
-            RegionKind::Code => ExtractOptions { trim_trailing_ws: true, dedent: false, unwrap: false },
-            _ => ExtractOptions { trim_trailing_ws: true, dedent: true, unwrap: true },
+            RegionKind::Code => ExtractOptions {
+                trim_trailing_ws: true,
+                dedent: false,
+                unwrap: false,
+            },
+            _ => ExtractOptions {
+                trim_trailing_ws: true,
+                dedent: true,
+                unwrap: true,
+            },
         }
     }
 }
@@ -306,7 +348,11 @@ pub fn extract(grid: &Grid, rect: Rect, opts: &ExtractOptions) -> String {
                     s.push(cell.ch);
                 }
             }
-            if opts.trim_trailing_ws { s.trim_end().to_string() } else { s }
+            if opts.trim_trailing_ws {
+                s.trim_end().to_string()
+            } else {
+                s
+            }
         })
         .collect();
     // The wrapper that produced the soft wraps had the width MINUS the indent we strip.
@@ -321,7 +367,12 @@ pub fn extract(grid: &Grid, rect: Rect, opts: &ExtractOptions) -> String {
 /// chars, never bytes, so a multibyte character can't be split.
 fn dedent(lines: &mut [String]) -> u16 {
     let lead = |l: &str| l.chars().take_while(|c| c.is_whitespace()).count();
-    let indent = lines.iter().filter(|l| !l.trim().is_empty()).map(|l| lead(l)).min().unwrap_or(0);
+    let indent = lines
+        .iter()
+        .filter(|l| !l.trim().is_empty())
+        .map(|l| lead(l))
+        .min()
+        .unwrap_or(0);
     if indent > 0 {
         for l in lines.iter_mut().filter(|l| !l.trim().is_empty()) {
             *l = l.chars().skip(indent).collect();
@@ -349,7 +400,10 @@ fn unwrap_soft_wraps(lines: Vec<String>, width: u16) -> Vec<String> {
                 let starts_block = line.is_empty()
                     || line.starts_with(char::is_whitespace)
                     || looks_like_list_item(&line);
-                let first_word = line.split_whitespace().next().map_or(0, |w| w.chars().count());
+                let first_word = line
+                    .split_whitespace()
+                    .next()
+                    .map_or(0, |w| w.chars().count());
                 let prev_len = prev.chars().count();
                 !starts_block
                     && prev.contains(' ')
@@ -378,8 +432,12 @@ fn has_alignment_gap(s: &str) -> bool {
 }
 
 fn looks_like_list_item(s: &str) -> bool {
-    s.starts_with("- ") || s.starts_with("* ") || s.starts_with("• ")
-        || s.split_once(". ").map_or(false, |(n, _)| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+    s.starts_with("- ")
+        || s.starts_with("* ")
+        || s.starts_with("• ")
+        || s.split_once(". ").map_or(false, |(n, _)| {
+            !n.is_empty() && n.chars().all(|c| c.is_ascii_digit())
+        })
 }
 
 // ───────────────────────── 5. Facade ─────────────────────────
@@ -411,7 +469,8 @@ impl Engine {
     }
 
     pub fn analyze<'g>(&self, grid: &'g Grid) -> Analysis<'g> {
-        let mut cands: Vec<Candidate> = self.detectors.iter().flat_map(|d| d.detect(grid)).collect();
+        let mut cands: Vec<Candidate> =
+            self.detectors.iter().flat_map(|d| d.detect(grid)).collect();
         let first = build_tree(grid.bounds(), cands.clone(), self.min_confidence);
         // Phase two: refine inside every region. A refined candidate must not partially
         // overlap (cross) any region from phase one: containing or avoiding one is fine,
@@ -428,7 +487,10 @@ impl Engine {
             }
         }
         cands.extend(extra);
-        Analysis { grid, tree: build_tree(grid.bounds(), cands, self.min_confidence) }
+        Analysis {
+            grid,
+            tree: build_tree(grid.bounds(), cands, self.min_confidence),
+        }
     }
 }
 
@@ -442,7 +504,9 @@ impl Analysis<'_> {
     /// Consecutive duplicates (same rect) are collapsed so every step grows the selection.
     pub fn ladder_at(&self, p: Pos) -> Vec<Target> {
         let chain = self.tree.chain_at(p);
-        let Some(&innermost) = chain.first() else { return vec![] };
+        let Some(&innermost) = chain.first() else {
+            return vec![];
+        };
         let mut out: Vec<Target> = Vec::new();
         let push = |t: Target, out: &mut Vec<Target>| {
             if out.last().map_or(true, |l| l.rect != t.rect) {
@@ -453,14 +517,40 @@ impl Analysis<'_> {
         let bounds = self.tree.get(innermost).content;
         if bounds.contains(p.row, p.col) {
             if let Some(w) = word_rect(self.grid, p, bounds) {
-                push(Target { kind: RegionKind::Word, rect: w, region: None }, &mut out);
+                push(
+                    Target {
+                        kind: RegionKind::Word,
+                        rect: w,
+                        region: None,
+                    },
+                    &mut out,
+                );
             }
-            let line = Rect { row0: p.row, row1: p.row + 1, col0: bounds.col0, col1: bounds.col1 };
-            push(Target { kind: RegionKind::Line, rect: line, region: None }, &mut out);
+            let line = Rect {
+                row0: p.row,
+                row1: p.row + 1,
+                col0: bounds.col0,
+                col1: bounds.col1,
+            };
+            push(
+                Target {
+                    kind: RegionKind::Line,
+                    rect: line,
+                    region: None,
+                },
+                &mut out,
+            );
         }
         for id in chain {
             let r = self.tree.get(id);
-            push(Target { kind: r.kind, rect: r.content, region: Some(id) }, &mut out);
+            push(
+                Target {
+                    kind: r.kind,
+                    rect: r.content,
+                    region: Some(id),
+                },
+                &mut out,
+            );
         }
         out
     }
@@ -483,7 +573,12 @@ fn word_rect(grid: &Grid, p: Pos, bounds: Rect) -> Option<Rect> {
     while r < bounds.col1 && is_word(r) {
         r += 1;
     }
-    Some(Rect { row0: p.row, row1: p.row + 1, col0: l, col1: r })
+    Some(Rect {
+        row0: p.row,
+        row1: p.row + 1,
+        col0: l,
+        col1: r,
+    })
 }
 
 // ───────────────────────── 6. Selection state machine ─────────────────────────
@@ -500,16 +595,23 @@ fn word_rect(grid: &Grid, p: Pos, bounds: Rect) -> Option<Rect> {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Key {
-    Left, Down, Up, Right, // h j k l
-    WordFwd, WordBack,     // w b
-    LineStart, LineEnd,    // 0 $
-    Top, Bottom,           // gg G
-    Expand, Shrink,        // Space, Backspace
-    VisualChar,            // v   (toggle)
-    VisualLine,            // V   (toggle)
-    VisualRect,            // Ctrl-v (toggle)
-    Copy,                  // Enter
-    Cancel,                // Esc / q
+    Left,
+    Down,
+    Up,
+    Right, // h j k l
+    WordFwd,
+    WordBack, // w b
+    LineStart,
+    LineEnd, // 0 $
+    Top,
+    Bottom, // gg G
+    Expand,
+    Shrink,     // Space, Backspace
+    VisualChar, // v   (toggle)
+    VisualLine, // V   (toggle)
+    VisualRect, // Ctrl-v (toggle)
+    Copy,       // Enter
+    Cancel,     // Esc / q
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -555,8 +657,12 @@ impl<'a, 'g> Session<'a, 'g> {
         s
     }
 
-    pub fn cursor(&self) -> Pos { self.cursor }
-    pub fn mode(&self) -> Mode { self.mode }
+    pub fn cursor(&self) -> Pos {
+        self.cursor
+    }
+    pub fn mode(&self) -> Mode {
+        self.mode
+    }
 
     pub fn handle(&mut self, key: Key) -> Action {
         let g = self.analysis.grid;
@@ -564,17 +670,35 @@ impl<'a, 'g> Session<'a, 'g> {
         let last_col = g.cols.saturating_sub(1);
         let c = self.cursor;
         match key {
-            Key::Left => self.move_to(Pos { row: c.row, col: c.col.saturating_sub(1) }),
-            Key::Right => self.move_to(Pos { row: c.row, col: (c.col + 1).min(last_col) }),
-            Key::Up => self.move_to(Pos { row: c.row.saturating_sub(1), col: c.col }),
-            Key::Down => self.move_to(Pos { row: (c.row + 1).min(last_row), col: c.col }),
+            Key::Left => self.move_to(Pos {
+                row: c.row,
+                col: c.col.saturating_sub(1),
+            }),
+            Key::Right => self.move_to(Pos {
+                row: c.row,
+                col: (c.col + 1).min(last_col),
+            }),
+            Key::Up => self.move_to(Pos {
+                row: c.row.saturating_sub(1),
+                col: c.col,
+            }),
+            Key::Down => self.move_to(Pos {
+                row: (c.row + 1).min(last_row),
+                col: c.col,
+            }),
             Key::Top => self.move_to(Pos { row: 0, col: c.col }),
-            Key::Bottom => self.move_to(Pos { row: last_row, col: c.col }),
+            Key::Bottom => self.move_to(Pos {
+                row: last_row,
+                col: c.col,
+            }),
             Key::WordFwd => self.move_to(word_fwd(g, c)),
             Key::WordBack => self.move_to(word_back(g, c)),
             Key::LineStart => {
                 let b = self.bounds_at(c);
-                self.move_to(Pos { row: c.row, col: b.col0 })
+                self.move_to(Pos {
+                    row: c.row,
+                    col: b.col0,
+                })
             }
             Key::LineEnd => {
                 let b = self.bounds_at(c);
@@ -630,7 +754,11 @@ impl<'a, 'g> Session<'a, 'g> {
             }
         }
         self.set_cursor(p);
-        self.level = if self.ladder.is_empty() { None } else { Some(0) };
+        self.level = if self.ladder.is_empty() {
+            None
+        } else {
+            Some(0)
+        };
         Action::Redraw
     }
 
@@ -639,7 +767,10 @@ impl<'a, 'g> Session<'a, 'g> {
         let c = self.cursor;
         let a = self.anchor.unwrap_or(c);
         match self.mode {
-            Mode::Semantic => self.level.map(|i| vec![self.ladder[i].rect]).unwrap_or_default(),
+            Mode::Semantic => self
+                .level
+                .map(|i| vec![self.ladder[i].rect])
+                .unwrap_or_default(),
             Mode::Rect => vec![Rect {
                 row0: a.row.min(c.row),
                 row1: a.row.max(c.row) + 1,
@@ -656,7 +787,11 @@ impl<'a, 'g> Session<'a, 'g> {
                 }]
             }
             Mode::Char => {
-                let (s, e) = if (a.row, a.col) <= (c.row, c.col) { (a, c) } else { (c, a) };
+                let (s, e) = if (a.row, a.col) <= (c.row, c.col) {
+                    (a, c)
+                } else {
+                    (c, a)
+                };
                 let cols = self.analysis.grid.cols;
                 (s.row..=e.row)
                     .map(|r| Rect {
@@ -682,7 +817,11 @@ impl<'a, 'g> Session<'a, 'g> {
                 .map(|t| self.analysis.extract(t))
                 .unwrap_or_default(),
             _ => {
-                let raw = ExtractOptions { trim_trailing_ws: true, dedent: false, unwrap: false };
+                let raw = ExtractOptions {
+                    trim_trailing_ws: true,
+                    dedent: false,
+                    unwrap: false,
+                };
                 self.highlight()
                     .iter()
                     .map(|r| extract(self.analysis.grid, *r, &raw))
@@ -696,7 +835,12 @@ impl<'a, 'g> Session<'a, 'g> {
     pub fn status(&self) -> String {
         match (self.mode, self.level) {
             (Mode::Semantic, Some(i)) => {
-                format!("SELECT {:?} ({}/{})", self.ladder[i].kind, i + 1, self.ladder.len())
+                format!(
+                    "SELECT {:?} ({}/{})",
+                    self.ladder[i].kind,
+                    i + 1,
+                    self.ladder.len()
+                )
             }
             (Mode::Semantic, None) => "NORMAL".to_string(),
             (Mode::Char, _) => "VISUAL".to_string(),
@@ -748,7 +892,11 @@ impl<'a, 'g> Session<'a, 'g> {
 fn word_fwd(grid: &Grid, p: Pos) -> Pos {
     let cols = grid.cols as usize;
     let total = cols * grid.rows as usize;
-    let ws = |i: usize| grid.get((i / cols) as u16, (i % cols) as u16).ch.is_whitespace();
+    let ws = |i: usize| {
+        grid.get((i / cols) as u16, (i % cols) as u16)
+            .ch
+            .is_whitespace()
+    };
     let mut i = p.row as usize * cols + p.col as usize;
     while i + 1 < total && !ws(i) {
         i += 1;
@@ -759,12 +907,19 @@ fn word_fwd(grid: &Grid, p: Pos) -> Pos {
     while i + 1 < total && ws(i) {
         i += 1;
     }
-    Pos { row: (i / cols) as u16, col: (i % cols) as u16 }
+    Pos {
+        row: (i / cols) as u16,
+        col: (i % cols) as u16,
+    }
 }
 
 fn word_back(grid: &Grid, p: Pos) -> Pos {
     let cols = grid.cols as usize;
-    let ws = |i: usize| grid.get((i / cols) as u16, (i % cols) as u16).ch.is_whitespace();
+    let ws = |i: usize| {
+        grid.get((i / cols) as u16, (i % cols) as u16)
+            .ch
+            .is_whitespace()
+    };
     let mut i = p.row as usize * cols + p.col as usize;
     if i == 0 {
         return p;
@@ -776,7 +931,10 @@ fn word_back(grid: &Grid, p: Pos) -> Pos {
     while i > 0 && i % cols != 0 && !ws(i - 1) {
         i -= 1;
     }
-    Pos { row: (i / cols) as u16, col: (i % cols) as u16 }
+    Pos {
+        row: (i / cols) as u16,
+        col: (i % cols) as u16,
+    }
 }
 
 #[cfg(test)]
@@ -788,7 +946,14 @@ mod selection_tests {
         let mut g = Grid::new(cols, lines.len() as u16);
         for (r, line) in lines.iter().enumerate() {
             for (c, ch) in line.chars().enumerate() {
-                g.set(r as u16, c as u16, Cell { ch, ..Cell::default() });
+                g.set(
+                    r as u16,
+                    c as u16,
+                    Cell {
+                        ch,
+                        ..Cell::default()
+                    },
+                );
             }
         }
         g
@@ -887,7 +1052,13 @@ mod tests {
             "- a list item".to_string(),
         ];
         let out = unwrap_soft_wraps(lines, 32);
-        assert_eq!(out, vec!["this line is long enough to be wrapped onto the next one", "- a list item"]);
+        assert_eq!(
+            out,
+            vec![
+                "this line is long enough to be wrapped onto the next one",
+                "- a list item"
+            ]
+        );
     }
 
     fn grid_of(lines: &[&str]) -> Grid {
@@ -895,7 +1066,14 @@ mod tests {
         let mut g = Grid::new(cols, lines.len() as u16);
         for (r, line) in lines.iter().enumerate() {
             for (c, ch) in line.chars().enumerate() {
-                g.set(r as u16, c as u16, Cell { ch, ..Cell::default() });
+                g.set(
+                    r as u16,
+                    c as u16,
+                    Cell {
+                        ch,
+                        ..Cell::default()
+                    },
+                );
             }
         }
         g
@@ -925,7 +1103,11 @@ mod tests {
     #[test]
     fn code_keeps_its_indentation() {
         let g = grid_of(&["  fn f() {", "      1", "  }"]);
-        let t = Target { kind: RegionKind::Code, rect: g.bounds(), region: None };
+        let t = Target {
+            kind: RegionKind::Code,
+            rect: g.bounds(),
+            region: None,
+        };
         let a = Engine::with_defaults().analyze(&g);
         assert_eq!(a.extract(&t), "  fn f() {\n      1\n  }");
     }
@@ -954,27 +1136,63 @@ mod tests {
     #[test]
     fn unwrap_leaves_tables_and_path_lists_alone() {
         // Aligned columns (2+ spaces), every row nearly full width.
-        let rows = v(&["web-1   1/1   Running   10.0.0.7", "web-2   1/1   Running   10.0.0.8"]);
+        let rows = v(&[
+            "web-1   1/1   Running   10.0.0.7",
+            "web-2   1/1   Running   10.0.0.8",
+        ]);
         assert_eq!(unwrap_soft_wraps(rows.clone(), 34), rows);
         // A column of long single tokens.
-        let paths = v(&["src/very/long/path/to/file.rs", "src/very/long/path/to/other.rs"]);
+        let paths = v(&[
+            "src/very/long/path/to/file.rs",
+            "src/very/long/path/to/other.rs",
+        ]);
         assert_eq!(unwrap_soft_wraps(paths.clone(), 30), paths);
     }
 
     #[test]
     fn unwrap_keeps_blank_lines_and_indented_lines() {
-        let out = unwrap_soft_wraps(v(&["aaaa bbbb cccc dddd", "", "eeee ffff gggg hhhh", "  indented"]), 20);
-        assert_eq!(out, v(&["aaaa bbbb cccc dddd", "", "eeee ffff gggg hhhh", "  indented"]));
+        let out = unwrap_soft_wraps(
+            v(&[
+                "aaaa bbbb cccc dddd",
+                "",
+                "eeee ffff gggg hhhh",
+                "  indented",
+            ]),
+            20,
+        );
+        assert_eq!(
+            out,
+            v(&[
+                "aaaa bbbb cccc dddd",
+                "",
+                "eeee ffff gggg hhhh",
+                "  indented"
+            ])
+        );
     }
 
     #[test]
     fn ladder_without_detectors_is_word_line_pane() {
         let mut g = Grid::new(10, 2);
         for (i, ch) in "hello you".chars().enumerate() {
-            g.set(0, i as u16, Cell { ch, ..Cell::default() });
+            g.set(
+                0,
+                i as u16,
+                Cell {
+                    ch,
+                    ..Cell::default()
+                },
+            );
         }
         let a = Engine::with_defaults().analyze(&g);
-        let kinds: Vec<_> = a.ladder_at(Pos { row: 0, col: 1 }).iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![RegionKind::Word, RegionKind::Line, RegionKind::Pane]);
+        let kinds: Vec<_> = a
+            .ladder_at(Pos { row: 0, col: 1 })
+            .iter()
+            .map(|t| t.kind)
+            .collect();
+        assert_eq!(
+            kinds,
+            vec![RegionKind::Word, RegionKind::Line, RegionKind::Pane]
+        );
     }
 }

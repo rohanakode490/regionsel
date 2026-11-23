@@ -106,7 +106,10 @@ pub fn parse_key(spec: &str) -> Result<KeyInput, String> {
     }
     let mut chars = rest.chars();
     match (chars.next(), chars.next()) {
-        (Some(c), None) => Ok(KeyInput { name: KeyName::Char(if ctrl { c.to_ascii_lowercase() } else { c }), ctrl }),
+        (Some(c), None) => Ok(KeyInput {
+            name: KeyName::Char(if ctrl { c.to_ascii_lowercase() } else { c }),
+            ctrl,
+        }),
         _ => Err(format!("unknown key '{spec}'")),
     }
 }
@@ -141,9 +144,15 @@ pub struct Config {
 impl Config {
     /// The built-in configuration.
     pub fn defaults() -> Config {
-        let mut c = Config { scrollback: 2000, bindings: Vec::new() };
+        let mut c = Config {
+            scrollback: 2000,
+            bindings: Vec::new(),
+        };
         let warnings = c.apply(DEFAULT_CONFIG);
-        debug_assert!(warnings.is_empty(), "built-in config has errors: {warnings:?}");
+        debug_assert!(
+            warnings.is_empty(),
+            "built-in config has errors: {warnings:?}"
+        );
         c
     }
 
@@ -157,7 +166,10 @@ impl Config {
                 continue;
             }
             if let Err(message) = self.apply_line(line) {
-                warnings.push(Warning { line: i + 1, message });
+                warnings.push(Warning {
+                    line: i + 1,
+                    message,
+                });
             }
         }
         warnings
@@ -170,16 +182,23 @@ impl Config {
                 if !(3..=4).contains(&t.len()) {
                     return Err("usage: bind <key> [<key>] <action>".into());
                 }
-                let keys = t[1..t.len() - 1].iter().map(|k| parse_key(k)).collect::<Result<Vec<_>, _>>()?;
+                let keys = t[1..t.len() - 1]
+                    .iter()
+                    .map(|k| parse_key(k))
+                    .collect::<Result<Vec<_>, _>>()?;
                 let action = t[t.len() - 1];
-                let cmd = parse_action(action).ok_or_else(|| format!("unknown action '{action}'"))?;
+                let cmd =
+                    parse_action(action).ok_or_else(|| format!("unknown action '{action}'"))?;
                 self.bind(keys, cmd, &t[1..t.len() - 1].join(" "))
             }
             "unbind" => {
                 if !(2..=3).contains(&t.len()) {
                     return Err("usage: unbind <key> [<key>]".into());
                 }
-                let keys = t[1..].iter().map(|k| parse_key(k)).collect::<Result<Vec<_>, _>>()?;
+                let keys = t[1..]
+                    .iter()
+                    .map(|k| parse_key(k))
+                    .collect::<Result<Vec<_>, _>>()?;
                 let before = self.bindings.len();
                 self.bindings.retain(|(seq, _)| *seq != keys);
                 if self.bindings.len() == before {
@@ -191,22 +210,35 @@ impl Config {
                 if t.len() != 2 {
                     return Err("usage: scrollback <lines>".into());
                 }
-                self.scrollback = t[1].parse().map_err(|_| format!("'{}' is not a number of lines", t[1]))?;
+                self.scrollback = t[1]
+                    .parse()
+                    .map_err(|_| format!("'{}' is not a number of lines", t[1]))?;
                 Ok(())
             }
-            other => Err(format!("unknown directive '{other}' (expected bind, unbind or scrollback)")),
+            other => Err(format!(
+                "unknown directive '{other}' (expected bind, unbind or scrollback)"
+            )),
         }
     }
 
     fn bind(&mut self, keys: Vec<KeyInput>, cmd: Command, shown: &str) -> Result<(), String> {
-        if let [KeyInput { name: KeyName::Char('1'..='9'), ctrl: false }, ..] = keys[..] {
-            return Err(format!("'{shown}': digits 1-9 start a count (as in 5j) and cannot be bound"));
+        if let [KeyInput {
+            name: KeyName::Char('1'..='9'),
+            ctrl: false,
+        }, ..] = keys[..]
+        {
+            return Err(format!(
+                "'{shown}': digits 1-9 start a count (as in 5j) and cannot be bound"
+            ));
         }
         if let Some(existing) = self.bindings.iter_mut().find(|(seq, _)| *seq == keys) {
             existing.1 = cmd; // rebinding the same keys replaces
             return Ok(());
         }
-        let clash = self.bindings.iter().any(|(seq, _)| seq.starts_with(&keys) || keys.starts_with(seq));
+        let clash = self
+            .bindings
+            .iter()
+            .any(|(seq, _)| seq.starts_with(&keys) || keys.starts_with(seq));
         if clash {
             return Err(format!(
                 "'{shown}' conflicts with an existing binding (a key cannot be both a binding and the start of a sequence); unbind the other one first"
@@ -220,7 +252,11 @@ impl Config {
         if let Some((_, cmd)) = self.bindings.iter().find(|(s, _)| s == seq) {
             return Lookup::Exact(*cmd);
         }
-        if self.bindings.iter().any(|(s, _)| s.len() > seq.len() && s.starts_with(seq)) {
+        if self
+            .bindings
+            .iter()
+            .any(|(s, _)| s.len() > seq.len() && s.starts_with(seq))
+        {
             return Lookup::Prefix;
         }
         Lookup::None
@@ -247,7 +283,12 @@ impl Keymap {
             if let KeyName::Char(d) = input.name {
                 if d.is_ascii_digit() && (d != '0' || self.count.is_some()) {
                     let digit = d.to_digit(10).unwrap_or(0);
-                    self.count = Some(self.count.unwrap_or(0).saturating_mul(10).saturating_add(digit));
+                    self.count = Some(
+                        self.count
+                            .unwrap_or(0)
+                            .saturating_mul(10)
+                            .saturating_add(digit),
+                    );
                     return None;
                 }
             }
@@ -283,7 +324,14 @@ impl Keymap {
                 let n = count.unwrap_or(1).clamp(1, 9999);
                 let repeatable = matches!(
                     key,
-                    Key::Left | Key::Right | Key::Up | Key::Down | Key::WordFwd | Key::WordBack | Key::Expand | Key::Shrink
+                    Key::Left
+                        | Key::Right
+                        | Key::Up
+                        | Key::Down
+                        | Key::WordFwd
+                        | Key::WordBack
+                        | Key::Expand
+                        | Key::Shrink
                 );
                 (key, if repeatable { n } else { 1 })
             }
@@ -314,14 +362,44 @@ mod tests {
 
     #[test]
     fn parses_key_specs() {
-        assert_eq!(parse_key("j").unwrap(), KeyInput { name: KeyName::Char('j'), ctrl: false });
-        assert_eq!(parse_key("G").unwrap(), KeyInput { name: KeyName::Char('G'), ctrl: false });
+        assert_eq!(
+            parse_key("j").unwrap(),
+            KeyInput {
+                name: KeyName::Char('j'),
+                ctrl: false
+            }
+        );
+        assert_eq!(
+            parse_key("G").unwrap(),
+            KeyInput {
+                name: KeyName::Char('G'),
+                ctrl: false
+            }
+        );
         assert_eq!(parse_key("$").unwrap().name, KeyName::Char('$'));
-        assert_eq!(parse_key("ctrl-d").unwrap(), KeyInput { name: KeyName::Char('d'), ctrl: true });
-        assert_eq!(parse_key("Ctrl-D").unwrap(), KeyInput { name: KeyName::Char('d'), ctrl: true });
+        assert_eq!(
+            parse_key("ctrl-d").unwrap(),
+            KeyInput {
+                name: KeyName::Char('d'),
+                ctrl: true
+            }
+        );
+        assert_eq!(
+            parse_key("Ctrl-D").unwrap(),
+            KeyInput {
+                name: KeyName::Char('d'),
+                ctrl: true
+            }
+        );
         assert_eq!(parse_key("Space").unwrap().name, KeyName::Space);
         assert_eq!(parse_key("pgdn").unwrap().name, KeyName::PageDown);
-        assert_eq!(parse_key("ctrl--").unwrap(), KeyInput { name: KeyName::Char('-'), ctrl: true });
+        assert_eq!(
+            parse_key("ctrl--").unwrap(),
+            KeyInput {
+                name: KeyName::Char('-'),
+                ctrl: true
+            }
+        );
         assert!(parse_key("ctrl-").is_err());
         assert!(parse_key("jj").is_err());
         assert!(parse_key("").is_err());
@@ -329,11 +407,17 @@ mod tests {
 
     #[test]
     fn built_in_defaults_parse_cleanly_and_document_every_action() {
-        let mut c = Config { scrollback: 0, bindings: Vec::new() };
+        let mut c = Config {
+            scrollback: 0,
+            bindings: Vec::new(),
+        };
         assert_eq!(c.apply(DEFAULT_CONFIG), vec![]);
         assert_eq!(c.scrollback, 2000);
         for (name, _) in ACTIONS {
-            assert!(DEFAULT_CONFIG.contains(name), "action '{name}' is not documented in default.conf");
+            assert!(
+                DEFAULT_CONFIG.contains(name),
+                "action '{name}' is not documented in default.conf"
+            );
         }
     }
 
@@ -342,21 +426,42 @@ mod tests {
         let c = Config::defaults();
         let mut m = Keymap::default();
         assert_eq!(feed(&mut m, &c, &["j"]), vec![Some((Key::Down, 1))]);
-        assert_eq!(feed(&mut m, &c, &["5", "j"]), vec![None, Some((Key::Down, 5))]);
-        assert_eq!(feed(&mut m, &c, &["1", "0", "w"]), vec![None, None, Some((Key::WordFwd, 10))]);
+        assert_eq!(
+            feed(&mut m, &c, &["5", "j"]),
+            vec![None, Some((Key::Down, 5))]
+        );
+        assert_eq!(
+            feed(&mut m, &c, &["1", "0", "w"]),
+            vec![None, None, Some((Key::WordFwd, 10))]
+        );
         assert_eq!(feed(&mut m, &c, &["0"]), vec![Some((Key::LineStart, 1))]); // no count pending: a command
-        assert_eq!(feed(&mut m, &c, &["g", "g"]), vec![None, Some((Key::Top, 1))]);
-        assert_eq!(feed(&mut m, &c, &["G", "$", "space", "backspace", "enter"]).iter().flatten().count(), 5);
-        assert_eq!(feed(&mut m, &c, &["ctrl-v", "v", "V"]), vec![
-            Some((Key::VisualRect, 1)),
-            Some((Key::VisualChar, 1)),
-            Some((Key::VisualLine, 1))
-        ]);
+        assert_eq!(
+            feed(&mut m, &c, &["g", "g"]),
+            vec![None, Some((Key::Top, 1))]
+        );
+        assert_eq!(
+            feed(&mut m, &c, &["G", "$", "space", "backspace", "enter"])
+                .iter()
+                .flatten()
+                .count(),
+            5
+        );
+        assert_eq!(
+            feed(&mut m, &c, &["ctrl-v", "v", "V"]),
+            vec![
+                Some((Key::VisualRect, 1)),
+                Some((Key::VisualChar, 1)),
+                Some((Key::VisualLine, 1))
+            ]
+        );
         for q in ["q", "esc", "ctrl-c"] {
             assert_eq!(feed(&mut m, &c, &[q]), vec![Some((Key::Cancel, 1))], "{q}");
         }
         // Counts only repeat motions: "3G" is just G.
-        assert_eq!(feed(&mut m, &c, &["3", "G"]), vec![None, Some((Key::Bottom, 1))]);
+        assert_eq!(
+            feed(&mut m, &c, &["3", "G"]),
+            vec![None, Some((Key::Bottom, 1))]
+        );
     }
 
     #[test]
@@ -373,8 +478,14 @@ mod tests {
     fn a_dead_prefix_is_dropped_and_the_next_key_still_counts() {
         let c = Config::defaults();
         let mut m = Keymap::default();
-        assert_eq!(feed(&mut m, &c, &["g", "j"]), vec![None, Some((Key::Down, 1))]);
-        assert_eq!(feed(&mut m, &c, &["g", "g", "g", "g"]), vec![None, Some((Key::Top, 1)), None, Some((Key::Top, 1))]);
+        assert_eq!(
+            feed(&mut m, &c, &["g", "j"]),
+            vec![None, Some((Key::Down, 1))]
+        );
+        assert_eq!(
+            feed(&mut m, &c, &["g", "g", "g", "g"]),
+            vec![None, Some((Key::Top, 1)), None, Some((Key::Top, 1))]
+        );
         // An unnamed key resets a pending count.
         assert_eq!(m.feed(&c, k("5"), 40), None);
         assert_eq!(m.feed(&c, None, 40), None);
@@ -408,7 +519,10 @@ mod tests {
         assert!(w[4].message.contains("conflicts")); // 'g' vs the default "g g"
         assert_eq!(w[0].to_string(), "config line 2: unknown action 'nonsense'");
         let mut m = Keymap::default();
-        assert_eq!(feed(&mut m, &c, &["x", "z"]), vec![Some((Key::Cancel, 1)), Some((Key::Copy, 1))]);
+        assert_eq!(
+            feed(&mut m, &c, &["x", "z"]),
+            vec![Some((Key::Cancel, 1)), Some((Key::Copy, 1))]
+        );
         assert_eq!(c.scrollback, 2000); // the bad scrollback line changed nothing
     }
 
@@ -419,6 +533,9 @@ mod tests {
         assert_eq!(w.len(), 1);
         assert!(w[0].message.contains("digits 1-9"));
         let mut m = Keymap::default();
-        assert_eq!(feed(&mut m, &c, &["5", "j"]), vec![None, Some((Key::Down, 5))]);
+        assert_eq!(
+            feed(&mut m, &c, &["5", "j"]),
+            vec![None, Some((Key::Down, 5))]
+        );
     }
 }

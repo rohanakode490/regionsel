@@ -4,8 +4,8 @@
 use std::io::{self, Write};
 
 use crossterm::event::{
-    self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
-    MouseButton, MouseEventKind,
+    self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind,
+    KeyModifiers, MouseButton, MouseEventKind,
 };
 use crossterm::style::{
     Attribute, Color as CtColor, Print, ResetColor, SetAttribute, SetBackgroundColor,
@@ -23,7 +23,12 @@ const WHEEL_ROWS: i32 = 3;
 
 /// Returns Some(text) if the user pressed Enter, None if they cancelled.
 /// `click_start`: the popup was opened by a mouse click, so start with that cell selected.
-pub fn run(analysis: &Analysis, start: Pos, click_start: bool, config: &Config) -> io::Result<Option<String>> {
+pub fn run(
+    analysis: &Analysis,
+    start: Pos,
+    click_start: bool,
+    config: &Config,
+) -> io::Result<Option<String>> {
     let mut out = io::stdout();
     terminal::enable_raw_mode()?;
     execute!(out, EnterAlternateScreen, EnableMouseCapture, cursor::Hide)?;
@@ -54,7 +59,9 @@ fn event_loop(
     loop {
         match event::read()? {
             Event::Key(k) if k.kind != KeyEventKind::Release => {
-                if let Some((key, repeat)) = keymap.feed(config, to_input(&k), u32::from(view.height)) {
+                if let Some((key, repeat)) =
+                    keymap.feed(config, to_input(&k), u32::from(view.height))
+                {
                     for _ in 0..repeat {
                         match session.handle(key) {
                             Action::Copy(text) => return Ok(Some(text)),
@@ -132,7 +139,12 @@ fn to_ct(c: Color) -> CtColor {
     }
 }
 
-fn draw(out: &mut impl Write, analysis: &Analysis, session: &Session, view: &Viewport) -> io::Result<()> {
+fn draw(
+    out: &mut impl Write,
+    analysis: &Analysis,
+    session: &Session,
+    view: &Viewport,
+) -> io::Result<()> {
     let grid = analysis.grid;
     let (term_w, term_h) = (view.width, view.height);
     let hl = session.highlight();
@@ -147,7 +159,11 @@ fn draw(out: &mut impl Write, analysis: &Analysis, session: &Session, view: &Vie
             let cell = grid.get(r, c);
             // The left half of a wide char can be scrolled off: show a blank, not a gap.
             let ch = if cell.width == 0 {
-                if x == 0 { ' ' } else { continue } // continuation half of a wide char
+                if x == 0 {
+                    ' '
+                } else {
+                    continue;
+                } // continuation half of a wide char
             } else {
                 cell.ch
             };
@@ -185,7 +201,11 @@ fn draw(out: &mut impl Write, analysis: &Analysis, session: &Session, view: &Vie
     }
     // Rows below the grid (a screen taller than the grid): clear leftovers.
     for y in view.visible_rows()..term_h {
-        queue!(out, cursor::MoveTo(0, y), terminal::Clear(terminal::ClearType::CurrentLine))?;
+        queue!(
+            out,
+            cursor::MoveTo(0, y),
+            terminal::Clear(terminal::ClearType::CurrentLine)
+        )?;
     }
 
     // Status tag, bottom-right. (Covers a few cells of the last row; a real status line

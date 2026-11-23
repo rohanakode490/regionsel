@@ -31,7 +31,10 @@ pub fn pane_info(target: &str) -> Result<PaneInfo, String> {
     if n.len() != 8 {
         return Err(format!("unexpected display-message output: {out:?}"));
     }
-    let num = |i: usize| n[i].parse::<u16>().map_err(|e| format!("bad number {:?}: {e}", n[i]));
+    let num = |i: usize| {
+        n[i].parse::<u16>()
+            .map_err(|e| format!("bad number {:?}: {e}", n[i]))
+    };
     Ok(PaneInfo {
         left: num(1)?,
         top: num(2)?,
@@ -39,7 +42,9 @@ pub fn pane_info(target: &str) -> Result<PaneInfo, String> {
         height: num(4)?,
         cursor_x: num(5)?,
         cursor_y: num(6)?,
-        history: n[7].parse::<u32>().map_err(|e| format!("bad number {:?}: {e}", n[7]))?,
+        history: n[7]
+            .parse::<u32>()
+            .map_err(|e| format!("bad number {:?}: {e}", n[7]))?,
     })
 }
 
@@ -100,10 +105,19 @@ pub struct PickArgs {
 
 /// Open a borderless popup exactly over the pane and run `regionsel pick` on the snapshot
 /// that was captured before this call.
-pub fn popup(info: &PaneInfo, exe: &str, snapshot: &std::path::Path, pick: &PickArgs) -> Result<(), String> {
+pub fn popup(
+    info: &PaneInfo,
+    exe: &str,
+    snapshot: &std::path::Path,
+    pick: &PickArgs,
+) -> Result<(), String> {
     match version() {
         Some(v) if v >= (3, 3) => {}
-        Some((a, b)) => return Err(format!("needs tmux >= 3.3 for display-popup -B (found {a}.{b})")),
+        Some((a, b)) => {
+            return Err(format!(
+                "needs tmux >= 3.3 for display-popup -B (found {a}.{b})"
+            ))
+        }
         None => return Err("cannot parse `tmux -V`".into()),
     }
     let cmd = format!(
@@ -116,9 +130,26 @@ pub fn popup(info: &PaneInfo, exe: &str, snapshot: &std::path::Path, pick: &Pick
         pick.cursor.1,
         if pick.click { " --click" } else { "" }
     );
-    let (x, y) = (info.left.to_string(), (info.top + status_top_offset()).to_string());
+    let (x, y) = (
+        info.left.to_string(),
+        (info.top + status_top_offset()).to_string(),
+    );
     let (w, h) = (info.width.to_string(), info.height.to_string());
-    tmux(&["display-popup", "-B", "-E", "-x", &x, "-y", &y, "-w", &w, "-h", &h, &cmd]).map(|_| ())
+    tmux(&[
+        "display-popup",
+        "-B",
+        "-E",
+        "-x",
+        &x,
+        "-y",
+        &y,
+        "-w",
+        &w,
+        "-h",
+        &h,
+        &cmd,
+    ])
+    .map(|_| ())
 }
 
 #[cfg(test)]

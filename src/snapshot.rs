@@ -20,9 +20,17 @@ fn dir() -> PathBuf {
 
 /// Write `raw` to a fresh private file and return its path.
 pub fn write(raw: &str) -> std::io::Result<PathBuf> {
-    let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.subsec_nanos()).unwrap_or(0);
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.subsec_nanos())
+        .unwrap_or(0);
     for attempt in 0..8u32 {
-        let path = dir().join(format!("regionsel-{}-{}-{}.ansi", std::process::id(), nanos, attempt));
+        let path = dir().join(format!(
+            "regionsel-{}-{}-{}.ansi",
+            std::process::id(),
+            nanos,
+            attempt
+        ));
         let mut opts = OpenOptions::new();
         opts.write(true).create_new(true);
         #[cfg(unix)]
@@ -36,7 +44,10 @@ pub fn write(raw: &str) -> std::io::Result<PathBuf> {
             Err(e) => return Err(e),
         }
     }
-    Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, "no free snapshot file name"))
+    Err(std::io::Error::new(
+        std::io::ErrorKind::AlreadyExists,
+        "no free snapshot file name",
+    ))
 }
 
 /// Read the snapshot and delete it, even if reading fails.
@@ -85,7 +96,10 @@ mod tests {
         let a = write("a").unwrap();
         let b = write("b").unwrap();
         assert_ne!(a, b);
-        assert_eq!(fs::metadata(&a).unwrap().permissions().mode() & 0o777, 0o600);
+        assert_eq!(
+            fs::metadata(&a).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
         let _ = take(&a);
         let _ = take(&b);
     }

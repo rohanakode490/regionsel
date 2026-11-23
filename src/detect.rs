@@ -30,7 +30,11 @@ fn ink_rows(grid: &Grid, r: Rect) -> Option<Rect> {
     };
     let first = (r.row0..r.row1).find(|&row| has_ink(row))?;
     let last = (r.row0..r.row1).rev().find(|&row| has_ink(row))?;
-    Some(Rect { row0: first, row1: last + 1, ..r })
+    Some(Rect {
+        row0: first,
+        row1: last + 1,
+        ..r
+    })
 }
 
 // ───────────────────────── BackgroundRunDetector ─────────────────────────
@@ -63,7 +67,11 @@ impl Default for BackgroundRunDetector {
 
 fn effective_bg(cell: &Cell) -> Color {
     if cell.attrs.reverse {
-        if cell.fg == Color::Default { Color::Indexed(15) } else { cell.fg }
+        if cell.fg == Color::Default {
+            Color::Indexed(15)
+        } else {
+            cell.fg
+        }
     } else {
         cell.bg
     }
@@ -122,12 +130,21 @@ impl Detector for BackgroundRunDetector {
                 while c < grid.cols && effective_bg(grid.get(r, c)) == color {
                     c += 1;
                 }
-                match groups.iter_mut().find(|g| g.color == color && g.c0 == start && g.r1 + 1 == r) {
+                match groups
+                    .iter_mut()
+                    .find(|g| g.color == color && g.c0 == start && g.r1 + 1 == r)
+                {
                     Some(g) => {
                         g.r1 = r;
                         g.c1 = g.c1.max(c);
                     }
-                    None => groups.push(Group { color, r0: r, r1: r, c0: start, c1: c }),
+                    None => groups.push(Group {
+                        color,
+                        r0: r,
+                        r1: r,
+                        c0: start,
+                        c1: c,
+                    }),
                 }
             }
         }
@@ -135,7 +152,12 @@ impl Detector for BackgroundRunDetector {
         groups
             .into_iter()
             .filter_map(|g| {
-                let outer = Rect { row0: g.r0, col0: g.c0, row1: g.r1 + 1, col1: g.c1 };
+                let outer = Rect {
+                    row0: g.r0,
+                    col0: g.c0,
+                    row1: g.r1 + 1,
+                    col1: g.c1,
+                };
                 if outer.width() < self.min_width {
                     return None;
                 }
@@ -194,7 +216,10 @@ pub struct BorderDetector {
 
 impl Default for BorderDetector {
     fn default() -> Self {
-        BorderDetector { ascii: true, max_rects: 2000 }
+        BorderDetector {
+            ascii: true,
+            max_rects: 2000,
+        }
     }
 }
 
@@ -211,10 +236,10 @@ fn dirs(ch: char, ascii: bool) -> u8 {
         '-' if ascii => L | R,
         '|' if ascii => U | D,
         _ => match ch as u32 {
-            0x2500 | 0x2501 | 0x2504 | 0x2505 | 0x2508 | 0x2509 | 0x254C | 0x254D | 0x2550 | 0x257C
-            | 0x257E => L | R,
-            0x2502 | 0x2503 | 0x2506 | 0x2507 | 0x250A | 0x250B | 0x254E | 0x254F | 0x2551 | 0x257D
-            | 0x257F => U | D,
+            0x2500 | 0x2501 | 0x2504 | 0x2505 | 0x2508 | 0x2509 | 0x254C | 0x254D | 0x2550
+            | 0x257C | 0x257E => L | R,
+            0x2502 | 0x2503 | 0x2506 | 0x2507 | 0x250A | 0x250B | 0x254E | 0x254F | 0x2551
+            | 0x257D | 0x257F => U | D,
             0x250C..=0x250F | 0x2552..=0x2554 | 0x256D => D | R,
             0x2510..=0x2513 | 0x2555..=0x2557 | 0x256E => D | L,
             0x2514..=0x2517 | 0x2558..=0x255A | 0x2570 => U | R,
@@ -362,7 +387,12 @@ impl Detector for BorderDetector {
 
         // Drop rectangles crossed by another candidate (ambiguous unions of table cells).
         let keep: Vec<bool> = (0..rects.len())
-            .map(|i| !rects.iter().enumerate().any(|(j, o)| j != i && rects[i].crosses(o)))
+            .map(|i| {
+                !rects
+                    .iter()
+                    .enumerate()
+                    .any(|(j, o)| j != i && rects[i].crosses(o))
+            })
             .collect();
 
         rects
@@ -370,8 +400,12 @@ impl Detector for BorderDetector {
             .zip(keep)
             .filter(|&(_, k)| k)
             .map(|(r, _)| {
-                let interior =
-                    Rect { row0: r.row0 + 1, col0: r.col0 + 1, row1: r.row1 - 1, col1: r.col1 - 1 };
+                let interior = Rect {
+                    row0: r.row0 + 1,
+                    col0: r.col0 + 1,
+                    row1: r.row1 - 1,
+                    col1: r.col1 - 1,
+                };
                 let content = ink_rows(grid, interior).unwrap_or(interior);
                 let ascii_frame = grid.get(r.row0, r.col0).ch == '+';
                 Candidate {
@@ -442,7 +476,11 @@ impl Detector for SeparatorDetector {
                     r += 1;
                 }
                 if r - start >= self.min_rows {
-                    seps.push(Sep { col: c, r0: start, r1: r });
+                    seps.push(Sep {
+                        col: c,
+                        r0: start,
+                        r1: r,
+                    });
                 }
             }
         }
@@ -456,10 +494,19 @@ impl Detector for SeparatorDetector {
                 .map(|t| t.col + 1)
                 .max()
                 .unwrap_or(0);
-            let right =
-                seps.iter().filter(|t| t.col > s.col && overlaps(s, t)).map(|t| t.col).min().unwrap_or(grid.cols);
+            let right = seps
+                .iter()
+                .filter(|t| t.col > s.col && overlaps(s, t))
+                .map(|t| t.col)
+                .min()
+                .unwrap_or(grid.cols);
             for (c0, c1) in [(left, s.col), (s.col + 1, right)] {
-                let r = Rect { row0: s.r0, col0: c0, row1: s.r1, col1: c1 };
+                let r = Rect {
+                    row0: s.r0,
+                    col0: c0,
+                    row1: s.r1,
+                    col1: c1,
+                };
                 if c1 > c0 && ink_rows(grid, r).is_some() && !rects.contains(&r) {
                     rects.push(r);
                 }
@@ -501,7 +548,9 @@ pub struct IndentPrefixDetector {
 
 impl Default for IndentPrefixDetector {
     fn default() -> Self {
-        IndentPrefixDetector { min_indent_delta: 2 }
+        IndentPrefixDetector {
+            min_indent_delta: 2,
+        }
     }
 }
 
@@ -561,7 +610,9 @@ impl Refiner for IndentPrefixDetector {
         }
 
         // 2. Indented bodies.
-        let Some(margin) = indent.iter().flatten().copied().min() else { return out };
+        let Some(margin) = indent.iter().flatten().copied().min() else {
+            return out;
+        };
         let is_body = |i: usize| indent[i].is_some_and(|n| n >= margin + self.min_indent_delta);
         let mut i = 0;
         while i < indent.len() {
@@ -634,7 +685,12 @@ mod tests {
         }
     }
     fn rect(r0: u16, c0: u16, r1: u16, c1: u16) -> Rect {
-        Rect { row0: r0, col0: c0, row1: r1, col1: c1 }
+        Rect {
+            row0: r0,
+            col0: c0,
+            row1: r1,
+            col1: c1,
+        }
     }
 
     // ── borders ──
@@ -669,7 +725,11 @@ mod tests {
         for r in 1..5 {
             put(&mut g, r, 10, '│');
         }
-        let rects: Vec<Rect> = BorderDetector::default().detect(&g).iter().map(|c| c.outer).collect();
+        let rects: Vec<Rect> = BorderDetector::default()
+            .detect(&g)
+            .iter()
+            .map(|c| c.outer)
+            .collect();
         assert_eq!(rects.len(), 3, "{rects:?}");
         assert!(rects.contains(&rect(0, 0, 6, 11))); // left
         assert!(rects.contains(&rect(0, 10, 6, 21))); // right
@@ -693,7 +753,12 @@ mod tests {
         put(&mut g, 4, 10, '┼');
         let cands = BorderDetector::default().detect(&g);
         // 4 cells + frame. Dominoes (two cells) and the 2x1 strips are dropped.
-        assert_eq!(cands.len(), 5, "{:?}", cands.iter().map(|c| c.outer).collect::<Vec<_>>());
+        assert_eq!(
+            cands.len(),
+            5,
+            "{:?}",
+            cands.iter().map(|c| c.outer).collect::<Vec<_>>()
+        );
     }
 
     #[test]
@@ -706,7 +771,12 @@ mod tests {
         let cands = BorderDetector::default().detect(&g);
         assert_eq!(cands.len(), 1);
         assert!(cands[0].confidence < 0.9);
-        assert!(BorderDetector { ascii: false, max_rects: 10 }.detect(&g).is_empty());
+        assert!(BorderDetector {
+            ascii: false,
+            max_rects: 10
+        }
+        .detect(&g)
+        .is_empty());
     }
 
     #[test]
@@ -730,7 +800,11 @@ mod tests {
         draw_box(&mut g, 0, 12, 4, 29);
         text(&mut g, 0, 2, "[1]-A");
         text(&mut g, 0, 14, "[0]-Unstaged");
-        let mut rects: Vec<Rect> = BorderDetector::default().detect(&g).iter().map(|c| c.outer).collect();
+        let mut rects: Vec<Rect> = BorderDetector::default()
+            .detect(&g)
+            .iter()
+            .map(|c| c.outer)
+            .collect();
         rects.sort_by_key(|r| r.col0);
         assert_eq!(rects, vec![rect(0, 0, 5, 12), rect(0, 12, 5, 30)]);
     }
@@ -848,7 +922,18 @@ mod tests {
     fn reverse_video_counts_as_a_background() {
         let mut g = Grid::new(30, 4);
         for c in 0..30 {
-            g.set(3, c, Cell { ch: 'x', attrs: crate::Attrs { reverse: true, ..Default::default() }, ..Cell::default() });
+            g.set(
+                3,
+                c,
+                Cell {
+                    ch: 'x',
+                    attrs: crate::Attrs {
+                        reverse: true,
+                        ..Default::default()
+                    },
+                    ..Cell::default()
+                },
+            );
         }
         let cands = BackgroundRunDetector::default().detect(&g);
         assert_eq!(cands.len(), 1);
@@ -867,23 +952,52 @@ mod tests {
 
     #[test]
     fn paragraphs_are_blank_separated_runs_of_two_or_more_rows() {
-        let g = grid_lines(&["one a", "one b", "", "single", "", "three a", "three b", "three c"], 20);
+        let g = grid_lines(
+            &[
+                "one a", "one b", "", "single", "", "three a", "three b", "three c",
+            ],
+            20,
+        );
         let c = IndentPrefixDetector::default().refine(&g, g.bounds());
         let kinds: Vec<_> = c.iter().map(|c| (c.kind, c.outer)).collect();
-        assert_eq!(kinds, vec![(RegionKind::Paragraph, rect(0, 0, 2, 20)), (RegionKind::Paragraph, rect(5, 0, 8, 20))]);
+        assert_eq!(
+            kinds,
+            vec![
+                (RegionKind::Paragraph, rect(0, 0, 2, 20)),
+                (RegionKind::Paragraph, rect(5, 0, 8, 20))
+            ]
+        );
     }
 
     #[test]
     fn a_single_run_is_not_a_paragraph_split() {
         let g = grid_lines(&["a", "b", "c"], 10);
-        assert!(IndentPrefixDetector::default().refine(&g, g.bounds()).is_empty());
+        assert!(IndentPrefixDetector::default()
+            .refine(&g, g.bounds())
+            .is_empty());
     }
 
     #[test]
     fn indented_body_under_margin_rows_is_a_block() {
-        let g = grid_lines(&["> prompt", "", "  first para", "  more", "", "  second para", "", "* footer"], 20);
+        let g = grid_lines(
+            &[
+                "> prompt",
+                "",
+                "  first para",
+                "  more",
+                "",
+                "  second para",
+                "",
+                "* footer",
+            ],
+            20,
+        );
         let c = IndentPrefixDetector::default().refine(&g, g.bounds());
-        let blocks: Vec<Rect> = c.iter().filter(|c| c.kind == RegionKind::Block).map(|c| c.outer).collect();
+        let blocks: Vec<Rect> = c
+            .iter()
+            .filter(|c| c.kind == RegionKind::Block)
+            .map(|c| c.outer)
+            .collect();
         assert_eq!(blocks, vec![rect(2, 0, 6, 20)]); // trailing blank row excluded
     }
 
@@ -898,7 +1012,18 @@ mod tests {
     fn engine_ladder_word_line_paragraph_block_pane_and_unwrap_in_block() {
         // width 30. "  3. aaa bbb ccc ddd eee fff" is 29 wide, so "ggg" was wrapped onto the next row.
         let g = grid_lines(
-            &["> question", "", "  1. short item", "  2. a b", "  more words", "", "  3. aaa bbb ccc ddd eee fff", "  ggg end", "", "done"],
+            &[
+                "> question",
+                "",
+                "  1. short item",
+                "  2. a b",
+                "  more words",
+                "",
+                "  3. aaa bbb ccc ddd eee fff",
+                "  ggg end",
+                "",
+                "done",
+            ],
             30,
         );
         let a = Engine::with_defaults().analyze(&g);
@@ -906,11 +1031,20 @@ mod tests {
         let kinds: Vec<_> = ladder.iter().map(|t| t.kind).collect();
         assert_eq!(
             kinds,
-            vec![RegionKind::Word, RegionKind::Line, RegionKind::Paragraph, RegionKind::Block, RegionKind::Pane]
+            vec![
+                RegionKind::Word,
+                RegionKind::Line,
+                RegionKind::Paragraph,
+                RegionKind::Block,
+                RegionKind::Pane
+            ]
         );
         assert_eq!(a.extract(&ladder[2]), "1. short item\n2. a b\nmore words");
         let block = a.extract(&ladder[3]);
-        assert!(block.contains("3. aaa bbb ccc ddd eee fff ggg end"), "{block}"); // dedented, then unwrapped
+        assert!(
+            block.contains("3. aaa bbb ccc ddd eee fff ggg end"),
+            "{block}"
+        ); // dedented, then unwrapped
         assert!(!block.contains("> question") && !block.contains("done"));
     }
 
@@ -931,7 +1065,11 @@ mod tests {
         vsep(&mut g, 14, 0, 7, true);
         text(&mut g, 1, 1, "left text");
         text(&mut g, 1, 16, "right text");
-        let mut rects: Vec<Rect> = SeparatorDetector::default().detect(&g).iter().map(|c| c.outer).collect();
+        let mut rects: Vec<Rect> = SeparatorDetector::default()
+            .detect(&g)
+            .iter()
+            .map(|c| c.outer)
+            .collect();
         rects.sort_by_key(|r| r.col0);
         assert_eq!(rects, vec![rect(0, 0, 7, 14), rect(0, 15, 7, 30)]);
     }
@@ -944,9 +1082,16 @@ mod tests {
         for (c, w) in [(1, "a"), (14, "b"), (28, "c")] {
             text(&mut g, 1, c, w);
         }
-        let mut rects: Vec<Rect> = SeparatorDetector::default().detect(&g).iter().map(|c| c.outer).collect();
+        let mut rects: Vec<Rect> = SeparatorDetector::default()
+            .detect(&g)
+            .iter()
+            .map(|c| c.outer)
+            .collect();
         rects.sort_by_key(|r| r.col0);
-        assert_eq!(rects, vec![rect(0, 0, 5, 12), rect(0, 13, 5, 26), rect(0, 27, 5, 40)]);
+        assert_eq!(
+            rects,
+            vec![rect(0, 0, 5, 12), rect(0, 13, 5, 26), rect(0, 27, 5, 40)]
+        );
     }
 
     #[test]
@@ -971,7 +1116,15 @@ mod tests {
         let a = Engine::with_defaults().analyze(&g);
         let ladder = a.ladder_at(Pos { row: 2, col: 3 });
         let kinds: Vec<_> = ladder.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![RegionKind::Word, RegionKind::Line, RegionKind::Pane, RegionKind::Pane]);
+        assert_eq!(
+            kinds,
+            vec![
+                RegionKind::Word,
+                RegionKind::Line,
+                RegionKind::Pane,
+                RegionKind::Pane
+            ]
+        );
         assert_eq!(a.extract(&ladder[1]), "left one"); // not "left one|right one"
         assert_eq!(a.extract(&ladder[2]), "left one\nleft two"); // nothing from the right pane
     }
@@ -987,7 +1140,15 @@ mod tests {
         let a = Engine::with_defaults().analyze(&g);
         let ladder = a.ladder_at(Pos { row: 2, col: 4 });
         let kinds: Vec<_> = ladder.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![RegionKind::Word, RegionKind::Line, RegionKind::Panel, RegionKind::Pane]);
+        assert_eq!(
+            kinds,
+            vec![
+                RegionKind::Word,
+                RegionKind::Line,
+                RegionKind::Panel,
+                RegionKind::Pane
+            ]
+        );
         assert_eq!(a.extract(&ladder[0]), "alpha");
         assert_eq!(a.extract(&ladder[2]), "alpha beta\ngamma"); // no borders, no padding
     }
@@ -1001,7 +1162,10 @@ mod tests {
         text(&mut g, 3, 3, "more");
         let a = Engine::with_defaults().analyze(&g);
         let ladder = a.ladder_at(Pos { row: 2, col: 4 });
-        let panel = ladder.iter().find(|t| t.kind == RegionKind::Panel).expect("panel step");
+        let panel = ladder
+            .iter()
+            .find(|t| t.kind == RegionKind::Panel)
+            .expect("panel step");
         assert_eq!(a.extract(panel), "inside\nmore");
         assert_eq!(ladder.last().unwrap().kind, RegionKind::Pane);
     }

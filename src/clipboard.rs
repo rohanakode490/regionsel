@@ -53,7 +53,8 @@ pub fn copy(text: &str) -> Vec<&'static str> {
     }
 
     // -w (tmux >= 3.2) also pushes to the outer terminal via OSC 52; fall back without it.
-    if pipe("tmux", &["load-buffer", "-w", "-"], text) || pipe("tmux", &["load-buffer", "-"], text) {
+    if pipe("tmux", &["load-buffer", "-w", "-"], text) || pipe("tmux", &["load-buffer", "-"], text)
+    {
         ok.push("tmux");
     }
     ok

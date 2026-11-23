@@ -24,7 +24,9 @@ fn fixtures_root() -> PathBuf {
 }
 
 fn find_ansi(dir: &Path, out: &mut Vec<PathBuf>) {
-    let Ok(entries) = fs::read_dir(dir) else { return };
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
     let mut entries: Vec<_> = entries.flatten().map(|e| e.path()).collect();
     entries.sort();
     for p in entries {
@@ -37,7 +39,11 @@ fn find_ansi(dir: &Path, out: &mut Vec<PathBuf>) {
 }
 
 fn label(root: &Path, p: &Path) -> String {
-    p.strip_prefix(root).unwrap_or(p).with_extension("").display().to_string()
+    p.strip_prefix(root)
+        .unwrap_or(p)
+        .with_extension("")
+        .display()
+        .to_string()
 }
 
 /// Actual ladder for one probe, in the same shape as the expected JSON.
@@ -73,7 +79,9 @@ fn fixtures_match_snapshots() {
 
         let size = &expected["size"];
         let (Some(cols), Some(rows)) = (size[0].as_u64(), size[1].as_u64()) else {
-            failures.push(format!("{name}: expected.json needs \"size\": [cols, rows]"));
+            failures.push(format!(
+                "{name}: expected.json needs \"size\": [cols, rows]"
+            ));
             continue;
         };
         let grid = ansi::grid_from_capture(&raw, cols as u16, rows as u16);
@@ -90,7 +98,8 @@ fn fixtures_match_snapshots() {
 
         let mut changed = false;
         for probe in probes.iter_mut() {
-            let (Some(row), Some(col)) = (probe["pos"][0].as_u64(), probe["pos"][1].as_u64()) else {
+            let (Some(row), Some(col)) = (probe["pos"][0].as_u64(), probe["pos"][1].as_u64())
+            else {
                 failures.push(format!("{name}: probe without \"pos\": [row, col]"));
                 continue;
             };
@@ -116,5 +125,10 @@ fn fixtures_match_snapshots() {
         }
     }
 
-    assert!(failures.is_empty(), "{} fixture failure(s):\n\n{}", failures.len(), failures.join("\n\n"));
+    assert!(
+        failures.is_empty(),
+        "{} fixture failure(s):\n\n{}",
+        failures.len(),
+        failures.join("\n\n")
+    );
 }

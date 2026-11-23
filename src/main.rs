@@ -46,7 +46,10 @@ fn main() {
     };
     if let Err(e) = result {
         // Inside a popup, stderr vanishes with it, so also surface errors in tmux.
-        if matches!(args.first().map(String::as_str), Some("pick") | Some("popup")) {
+        if matches!(
+            args.first().map(String::as_str),
+            Some("pick") | Some("popup")
+        ) {
             tmux::message(&format!("regionsel: {e}"));
         }
         eprintln!("regionsel: {e}");
@@ -55,7 +58,10 @@ fn main() {
 }
 
 fn flag<'a>(args: &'a [String], name: &str) -> Option<&'a str> {
-    args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).map(String::as_str)
+    args.iter()
+        .position(|a| a == name)
+        .and_then(|i| args.get(i + 1))
+        .map(String::as_str)
 }
 
 fn cmd_init() -> Result<(), String> {
@@ -73,7 +79,6 @@ fn cmd_init() -> Result<(), String> {
     Ok(())
 }
 
-
 /// A capture plus how it maps onto the pane: `hist` rows of scrollback above `info.height`.
 struct Captured {
     raw: String,
@@ -83,17 +88,26 @@ struct Captured {
 }
 
 fn capture_pane(pane: &str, args: &[String], default_limit: u32) -> Result<Captured, String> {
-    let limit = flag(args, "--scrollback").and_then(|v| v.parse::<u32>().ok()).unwrap_or(default_limit);
+    let limit = flag(args, "--scrollback")
+        .and_then(|v| v.parse::<u32>().ok())
+        .unwrap_or(default_limit);
     let info = tmux::pane_info(pane)?;
     let raw = tmux::capture_with_history(pane, info.history.min(limit))?;
     // Trust the capture, not the arithmetic: derive the real row count from it.
     let rows = (snapshot::count_rows(&raw).max(info.height as usize)).min(u16::MAX as usize) as u16;
     let hist = rows - info.height;
-    Ok(Captured { raw, info, rows, hist })
+    Ok(Captured {
+        raw,
+        info,
+        rows,
+        hist,
+    })
 }
 
 fn cmd_popup(args: &[String]) -> Result<(), String> {
-    let pane = args.first().ok_or("usage: regionsel popup <pane-id> [--scrollback N] [--click X,Y]")?;
+    let pane = args
+        .first()
+        .ok_or("usage: regionsel popup <pane-id> [--scrollback N] [--click X,Y]")?;
     let exe = env::current_exe().map_err(|e| e.to_string())?;
     // Capture NOW, before the popup exists: what you select is what you saw at the keypress.
     let cfg = settings::load();
@@ -105,7 +119,10 @@ fn cmd_popup(args: &[String]) -> Result<(), String> {
     let pick = tmux::PickArgs {
         cols: cap.info.width,
         rows: cap.rows,
-        cursor: (x.min(cap.info.width.saturating_sub(1)), (y + cap.hist).min(cap.rows.saturating_sub(1))),
+        cursor: (
+            x.min(cap.info.width.saturating_sub(1)),
+            (y + cap.hist).min(cap.rows.saturating_sub(1)),
+        ),
         click: click.is_some(),
     };
     let result = tmux::popup(&cap.info, &exe.to_string_lossy(), &snap, &pick);
@@ -117,16 +134,31 @@ fn cmd_pick(args: &[String]) -> Result<(), String> {
     let cfg = settings::load();
     if let Some(first) = cfg.warnings.first() {
         // The popup hides stderr, so say it in tmux's status line.
-        let more = if cfg.warnings.len() > 1 { format!(" (+{} more)", cfg.warnings.len() - 1) } else { String::new() };
+        let more = if cfg.warnings.len() > 1 {
+            format!(" (+{} more)", cfg.warnings.len() - 1)
+        } else {
+            String::new()
+        };
         tmux::message(&format!("regionsel: {first}{more}"));
     }
     let (grid, start) = if let Some(file) = flag(args, "--snapshot") {
-        let (w, h) = flag(args, "--size").and_then(snapshot::parse_size).ok_or("--snapshot needs --size WxH")?;
-        let (cx, cy) = flag(args, "--cursor").and_then(snapshot::parse_cursor).unwrap_or((0, 0));
+        let (w, h) = flag(args, "--size")
+            .and_then(snapshot::parse_size)
+            .ok_or("--snapshot needs --size WxH")?;
+        let (cx, cy) = flag(args, "--cursor")
+            .and_then(snapshot::parse_cursor)
+            .unwrap_or((0, 0));
         let raw = snapshot::take(std::path::Path::new(file)).map_err(|e| format!("{file}: {e}"))?;
-        (ansi::grid_from_capture(&raw, w, h), Pos { row: cy.min(h.saturating_sub(1)), col: cx.min(w.saturating_sub(1)) })
+        (
+            ansi::grid_from_capture(&raw, w, h),
+            Pos {
+                row: cy.min(h.saturating_sub(1)),
+                col: cx.min(w.saturating_sub(1)),
+            },
+        )
     } else {
-        let pane = flag(args, "--pane").ok_or("usage: regionsel pick --pane <pane-id> | --snapshot F --size WxH")?;
+        let pane = flag(args, "--pane")
+            .ok_or("usage: regionsel pick --pane <pane-id> | --snapshot F --size WxH")?;
         let cap = capture_pane(pane, args, cfg.config.scrollback)?;
         let (w, h) = (cap.info.width, cap.rows);
         let start = Pos {
@@ -138,8 +170,13 @@ fn cmd_pick(args: &[String]) -> Result<(), String> {
     let engine = Engine::with_defaults();
     let analysis = engine.analyze(&grid);
 
-    let picked = ui::run(&analysis, start, args.iter().any(|a| a == "--click"), &cfg.config)
-        .map_err(|e| format!("terminal error: {e}"))?;
+    let picked = ui::run(
+        &analysis,
+        start,
+        args.iter().any(|a| a == "--click"),
+        &cfg.config,
+    )
+    .map_err(|e| format!("terminal error: {e}"))?;
 
     if let Some(text) = picked {
         if text.is_empty() {
@@ -175,8 +212,15 @@ fn cmd_dump(args: &[String]) -> Result<(), String> {
         return Err("dump needs --pane or --file".into());
     };
 
-    let num = |name: &str| flag(args, name).and_then(|v| v.parse::<u16>().ok()).unwrap_or(0);
-    let pos = Pos { row: num("--row"), col: num("--col") };
+    let num = |name: &str| {
+        flag(args, name)
+            .and_then(|v| v.parse::<u16>().ok())
+            .unwrap_or(0)
+    };
+    let pos = Pos {
+        row: num("--row"),
+        col: num("--col"),
+    };
     let analysis = Engine::with_defaults().analyze(&grid);
 
     for (i, t) in analysis.ladder_at(pos).iter().enumerate() {

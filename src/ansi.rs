@@ -22,7 +22,9 @@ pub fn grid_from_capture(raw: &str, cols: u16, rows: u16) -> Grid {
     let mut grid = Grid::new(cols, rows);
     for r in 0..rows {
         for c in 0..cols {
-            let Some(cell) = screen.cell(r, c) else { continue };
+            let Some(cell) = screen.cell(r, c) else {
+                continue;
+            };
             let width = if cell.is_wide_continuation() {
                 0
             } else if cell.is_wide() {
