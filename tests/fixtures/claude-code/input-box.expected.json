@@ -1,0 +1,110 @@
+{
+  "note": "recorded 2026-11-23 from tmux 3.4; app: claude-code",
+  "probes": [
+    {
+      "ladder": [
+        {
+          "kind": "Line",
+          "text": "second line of the draft"
+        },
+        {
+          "kind": "Block",
+          "text": "second line of the draft\nthird line, no newline after this"
+        },
+        {
+          "kind": "Paragraph",
+          "text": "\u273b Cooked for 6s \u00b7 done 6:20 PM\n                                                               ctrl+g to edit in VS Code \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u276f\u00a0first line of a draft\n  second line of the draft\n  third line, no newline after this\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  \u23f5\u23f5 auto mode on (shift+tab to cycle)"
+        },
+        {
+          "kind": "Pane",
+          "text": "\n  Annotations don't change how long anything lives. They describe relationships, such as\n  \"the returned reference is valid as long as both inputs are.\" The compiler then checks\n  that every caller respects those relationships. This rules out dangling pointers at\n  compile time, with no garbage collector.\n\n  - Returning a reference to a local variable: the value is dropped when the function\n    ends, so the reference would dangle. Return an owned value (String, not &str) instead.\n  - Over-constraining with one lifetime: using a single 'a for unrelated inputs forces the\n    shortest one on everything and can cause confusing \"borrowed value does not live long\n    enough\" errors. Use separate lifetimes when the references really are independent.\n  - Structs holding references: a struct with a &str field needs a lifetime parameter\n    (struct Parser<'a>), and it can't outlive its source. If that gets painful, owning the\n    data (String) is often simpler.\n\n  fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {\n      if a.len() >= b.len() { a } else { b }\n  }\n  // The result is valid only while both `a` and `b` are.\n\n\u273b Baked for 5s \u00b7 done 6:19 PM\n\n\u276f In main.rs change the greeting to \"hello, world\" and add a one-line comment above main.\n\n  Searched for 1 pattern, read 1 file\n\n\u25cf Update(main.rs)\n  \u23bf \u00a0Added 2 lines, removed 1 line\n      1 +// Entry point: prints a greeting.\n      2  fn main() {\n      2 -    println!(\"hello\");\n      3 +    println!(\"hello, world\");\n      4  }\n\n\u25cf I updated main.rs so the greeting is now \"hello, world\", and added the comment // Entry\n  point: prints a greeting. above main. I haven't compiled or run it.\n\n\u273b Cooked for 6s \u00b7 done 6:20 PM\n                                                               ctrl+g to edit in VS Code \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u276f\u00a0first line of a draft\n  second line of the draft\n  third line, no newline after this\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  \u23f5\u23f5 auto mode on (shift+tab to cycle)"
+        }
+      ],
+      "pos": [
+        41,
+        8
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "first"
+        },
+        {
+          "kind": "Line",
+          "text": "\u276f\u00a0first line of a draft"
+        },
+        {
+          "kind": "Paragraph",
+          "text": "\u273b Cooked for 6s \u00b7 done 6:20 PM\n                                                               ctrl+g to edit in VS Code \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u276f\u00a0first line of a draft\n  second line of the draft\n  third line, no newline after this\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  \u23f5\u23f5 auto mode on (shift+tab to cycle)"
+        },
+        {
+          "kind": "Pane",
+          "text": "\n  Annotations don't change how long anything lives. They describe relationships, such as\n  \"the returned reference is valid as long as both inputs are.\" The compiler then checks\n  that every caller respects those relationships. This rules out dangling pointers at\n  compile time, with no garbage collector.\n\n  - Returning a reference to a local variable: the value is dropped when the function\n    ends, so the reference would dangle. Return an owned value (String, not &str) instead.\n  - Over-constraining with one lifetime: using a single 'a for unrelated inputs forces the\n    shortest one on everything and can cause confusing \"borrowed value does not live long\n    enough\" errors. Use separate lifetimes when the references really are independent.\n  - Structs holding references: a struct with a &str field needs a lifetime parameter\n    (struct Parser<'a>), and it can't outlive its source. If that gets painful, owning the\n    data (String) is often simpler.\n\n  fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {\n      if a.len() >= b.len() { a } else { b }\n  }\n  // The result is valid only while both `a` and `b` are.\n\n\u273b Baked for 5s \u00b7 done 6:19 PM\n\n\u276f In main.rs change the greeting to \"hello, world\" and add a one-line comment above main.\n\n  Searched for 1 pattern, read 1 file\n\n\u25cf Update(main.rs)\n  \u23bf \u00a0Added 2 lines, removed 1 line\n      1 +// Entry point: prints a greeting.\n      2  fn main() {\n      2 -    println!(\"hello\");\n      3 +    println!(\"hello, world\");\n      4  }\n\n\u25cf I updated main.rs so the greeting is now \"hello, world\", and added the comment // Entry\n  point: prints a greeting. above main. I haven't compiled or run it.\n\n\u273b Cooked for 6s \u00b7 done 6:20 PM\n                                                               ctrl+g to edit in VS Code \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u276f\u00a0first line of a draft\n  second line of the draft\n  third line, no newline after this\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  \u23f5\u23f5 auto mode on (shift+tab to cycle)"
+        }
+      ],
+      "pos": [
+        40,
+        4
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "fn"
+        },
+        {
+          "kind": "Line",
+          "text": "2  fn main() {"
+        },
+        {
+          "kind": "Block",
+          "text": "\u23bf \u00a0Added 2 lines, removed 1 line\n    1 +// Entry point: prints a greeting.\n    2  fn main() {\n    2 -    println!(\"hello\");\n    3 +    println!(\"hello, world\");\n    4  }"
+        },
+        {
+          "kind": "Paragraph",
+          "text": "\u25cf Update(main.rs)\n  \u23bf \u00a0Added 2 lines, removed 1 line\n      1 +// Entry point: prints a greeting.\n      2  fn main() {\n      2 -    println!(\"hello\");\n      3 +    println!(\"hello, world\");\n      4  }"
+        },
+        {
+          "kind": "Pane",
+          "text": "\n  Annotations don't change how long anything lives. They describe relationships, such as\n  \"the returned reference is valid as long as both inputs are.\" The compiler then checks\n  that every caller respects those relationships. This rules out dangling pointers at\n  compile time, with no garbage collector.\n\n  - Returning a reference to a local variable: the value is dropped when the function\n    ends, so the reference would dangle. Return an owned value (String, not &str) instead.\n  - Over-constraining with one lifetime: using a single 'a for unrelated inputs forces the\n    shortest one on everything and can cause confusing \"borrowed value does not live long\n    enough\" errors. Use separate lifetimes when the references really are independent.\n  - Structs holding references: a struct with a &str field needs a lifetime parameter\n    (struct Parser<'a>), and it can't outlive its source. If that gets painful, owning the\n    data (String) is often simpler.\n\n  fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {\n      if a.len() >= b.len() { a } else { b }\n  }\n  // The result is valid only while both `a` and `b` are.\n\n\u273b Baked for 5s \u00b7 done 6:19 PM\n\n\u276f In main.rs change the greeting to \"hello, world\" and add a one-line comment above main.\n\n  Searched for 1 pattern, read 1 file\n\n\u25cf Update(main.rs)\n  \u23bf \u00a0Added 2 lines, removed 1 line\n      1 +// Entry point: prints a greeting.\n      2  fn main() {\n      2 -    println!(\"hello\");\n      3 +    println!(\"hello, world\");\n      4  }\n\n\u25cf I updated main.rs so the greeting is now \"hello, world\", and added the comment // Entry\n  point: prints a greeting. above main. I haven't compiled or run it.\n\n\u273b Cooked for 6s \u00b7 done 6:20 PM\n                                                               ctrl+g to edit in VS Code \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u276f\u00a0first line of a draft\n  second line of the draft\n  third line, no newline after this\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  \u23f5\u23f5 auto mode on (shift+tab to cycle)"
+        }
+      ],
+      "pos": [
+        29,
+        10
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "updated"
+        },
+        {
+          "kind": "Line",
+          "text": "\u25cf I updated main.rs so the greeting is now \"hello, world\", and added the comment // Entry"
+        },
+        {
+          "kind": "Paragraph",
+          "text": "\u25cf I updated main.rs so the greeting is now \"hello, world\", and added the comment // Entry\n  point: prints a greeting. above main. I haven't compiled or run it."
+        },
+        {
+          "kind": "Pane",
+          "text": "\n  Annotations don't change how long anything lives. They describe relationships, such as\n  \"the returned reference is valid as long as both inputs are.\" The compiler then checks\n  that every caller respects those relationships. This rules out dangling pointers at\n  compile time, with no garbage collector.\n\n  - Returning a reference to a local variable: the value is dropped when the function\n    ends, so the reference would dangle. Return an owned value (String, not &str) instead.\n  - Over-constraining with one lifetime: using a single 'a for unrelated inputs forces the\n    shortest one on everything and can cause confusing \"borrowed value does not live long\n    enough\" errors. Use separate lifetimes when the references really are independent.\n  - Structs holding references: a struct with a &str field needs a lifetime parameter\n    (struct Parser<'a>), and it can't outlive its source. If that gets painful, owning the\n    data (String) is often simpler.\n\n  fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {\n      if a.len() >= b.len() { a } else { b }\n  }\n  // The result is valid only while both `a` and `b` are.\n\n\u273b Baked for 5s \u00b7 done 6:19 PM\n\n\u276f In main.rs change the greeting to \"hello, world\" and add a one-line comment above main.\n\n  Searched for 1 pattern, read 1 file\n\n\u25cf Update(main.rs)\n  \u23bf \u00a0Added 2 lines, removed 1 line\n      1 +// Entry point: prints a greeting.\n      2  fn main() {\n      2 -    println!(\"hello\");\n      3 +    println!(\"hello, world\");\n      4  }\n\n\u25cf I updated main.rs so the greeting is now \"hello, world\", and added the comment // Entry\n  point: prints a greeting. above main. I haven't compiled or run it.\n\n\u273b Cooked for 6s \u00b7 done 6:20 PM\n                                                               ctrl+g to edit in VS Code \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u276f\u00a0first line of a draft\n  second line of the draft\n  third line, no newline after this\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  \u23f5\u23f5 auto mode on (shift+tab to cycle)"
+        }
+      ],
+      "pos": [
+        34,
+        8
+      ]
+    }
+  ],
+  "size": [
+    90,
+    45
+  ],
+  "known_issue": "BUG: (1) at probe [41,8] the Block drops the first draft line ('\u276f first line of a draft'), same marker-row cause as response-prose; (2) the Paragraph step spans from the '\u273b Cooked' status row through the status bar and joins the 'ctrl+g to edit' hint onto the rule line. Snapshot records current (wrong) behaviour."
+}
