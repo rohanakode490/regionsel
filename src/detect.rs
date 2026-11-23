@@ -222,6 +222,8 @@ fn dirs(ch: char, ascii: bool) -> u8 {
             0x252C..=0x2533 | 0x2564..=0x2566 => D | L | R,
             0x2534..=0x253B | 0x2567..=0x2569 => U | L | R,
             0x253C..=0x254B | 0x256A..=0x256C => U | D | L | R,
+            // lazygit-style scrollbar thumb drawn over a vertical border.
+            0x2590 => U | D,
             0x2574 | 0x2578 => L,
             0x2575 | 0x2579 => U,
             0x2576 | 0x257A => R,
@@ -252,16 +254,9 @@ impl Detector for BorderDetector {
             }
         }
 
-        // hspan[r][c]: how many steps an unbroken line runs RIGHT from (r,c). vspan: DOWN.
-        let mut hspan = vec![0u16; rows * cols];
+        // vspan[r][c]: how many steps an unbroken line runs DOWN from (r,c). Side edges of a
+        // box must be unbroken, which anchors the rectangle.
         let mut vspan = vec![0u16; rows * cols];
-        for r in 0..rows {
-            for c in (0..cols - 1).rev() {
-                if flags[r * cols + c] & R != 0 && flags[r * cols + c + 1] & L != 0 {
-                    hspan[r * cols + c] = 1 + hspan[r * cols + c + 1];
-                }
-            }
-        }
         for c in 0..cols {
             for r in (0..rows - 1).rev() {
                 if flags[r * cols + c] & D != 0 && flags[(r + 1) * cols + c] & U != 0 {
@@ -269,25 +264,85 @@ impl Detector for BorderDetector {
                 }
             }
         }
+        // hard_top / hard_bot: prefix counts, per row, of cells that cannot be part of a top /
+        // bottom horizontal edge. Titles are allowed on an edge (`╭─[1]─Status───╮`); these
+        // are not:
+        //  - a glyph with no horizontal direction (a bare `|` or `│`), and
+        //  - a one-sided corner (`┐` `┌` ...) with a real line attached on the inside, because
+        //    that is the border of a neighbouring box (`╮╭` between two panels), not a title.
+        //    (`┬` `┴` `┼` are through-cells: those are legitimate table junctions.)
+        let mut hard_top = vec![0u16; rows * (cols + 1)];
+        let mut hard_bot = vec![0u16; rows * (cols + 1)];
+        for r in 0..rows {
+            for c in 0..cols {
+                let f = flags[r * cols + c];
+                let bare = f != 0 && f & (L | R) == 0;
+                let one_sided = f & (L | R) != 0 && f & (L | R) != (L | R);
+                let down_link = f & D != 0 && vspan[r * cols + c] > 0;
+                let up_link = f & U != 0 && r > 0 && flags[(r - 1) * cols + c] & D != 0;
+                let i = r * (cols + 1) + c;
+                hard_top[i + 1] = hard_top[i] + (bare || (one_sided && down_link)) as u16;
+                hard_bot[i + 1] = hard_bot[i] + (bare || (one_sided && up_link)) as u16;
+            }
+        }
+        // blank[r][c]: the cell belongs to a run of non-glyph cells that is all whitespace.
+        // Such a gap in an edge is damage, not a title (titles contain visible text).
+        let mut blank = vec![0u16; rows * (cols + 1)];
+        for r in 0..rows {
+            let mut c = 0;
+            while c < cols {
+                let mut mark = false;
+                let start = c;
+                if flags[r * cols + c] == 0 {
+                    while c < cols && flags[r * cols + c] == 0 {
+                        c += 1;
+                    }
+                    mark = (start..c).all(|x| is_blank(grid.get(r as u16, x as u16)));
+                } else {
+                    c += 1;
+                }
+                for x in start..c {
+                    blank[r * (cols + 1) + x + 1] = mark as u16;
+                }
+            }
+            for x in 0..cols {
+                blank[r * (cols + 1) + x + 1] += blank[r * (cols + 1) + x];
+            }
+        }
+        // A horizontal edge from (r,c0) to (r,c1): corners point inward, the cells next to the
+        // corners are plain line (so `┌title┐` without dashes is NOT accepted), and nothing
+        // in between is a vertical glyph. Anything else in between is title text.
+        let through = |r: usize, c: usize| flags[r * cols + c] & (L | R) == (L | R);
+        let edge_ok = |r: usize, c0: usize, c1: usize, top: bool| {
+            let hard = if top { &hard_top } else { &hard_bot };
+            flags[r * cols + c0] & R != 0
+                && flags[r * cols + c1] & L != 0
+                && through(r, c0 + 1)
+                && through(r, c1 - 1)
+                && hard[r * (cols + 1) + c1] == hard[r * (cols + 1) + c0 + 1] // interior only
+                && blank[r * (cols + 1) + c1 + 1] == blank[r * (cols + 1) + c0]
+        };
 
-        // Every rectangle whose four edges are unbroken lines (at least 3x3 so there is an
-        // interior). Top edge: hspan at the corner. Left/right: vspan at the top corners.
-        // Bottom edge: hspan at the bottom-left corner.
+        // Every rectangle whose side edges are unbroken lines and whose top and bottom edges
+        // pass `edge_ok` (at least 3x3 so there is an interior).
         let mut rects: Vec<Rect> = Vec::new();
         'search: for r0 in 0..rows {
             for c0 in 0..cols {
-                let hs = hspan[r0 * cols + c0] as usize;
                 let vs = vspan[r0 * cols + c0] as usize;
-                if hs < 2 || vs < 2 {
+                if vs < 2 || flags[r0 * cols + c0] & R == 0 {
                     continue;
                 }
-                for c1 in c0 + 2..=c0 + hs {
+                for c1 in c0 + 2..cols {
+                    // Passing a vertical glyph on the top row ends every longer edge too.
+                    if hard_top[r0 * (cols + 1) + c1] != hard_top[r0 * (cols + 1) + c0 + 1] {
+                        break;
+                    }
                     let vs_right = vspan[r0 * cols + c1] as usize;
-                    if vs_right < 2 {
+                    if vs_right < 2 || !edge_ok(r0, c0, c1, true) {
                         continue;
                     }
                     for r1 in r0 + 2..=r0 + vs.min(vs_right) {
-                        if hspan[r1 * cols + c0] as usize >= c1 - c0 {
+                        if edge_ok(r1, c0, c1, false) {
                             rects.push(Rect {
                                 row0: r0 as u16,
                                 col0: c0 as u16,
@@ -445,6 +500,59 @@ mod tests {
         assert_eq!(cands.len(), 1);
         assert!(cands[0].confidence < 0.9);
         assert!(BorderDetector { ascii: false, max_rects: 10 }.detect(&g).is_empty());
+    }
+
+    #[test]
+    fn titled_top_and_bottom_borders_are_boxes() {
+        let mut g = Grid::new(30, 6);
+        draw_box(&mut g, 1, 2, 4, 25);
+        text(&mut g, 1, 5, " pods(default)[3] "); // title replaces part of the top edge
+        text(&mut g, 4, 18, "2 of 4"); // status on the bottom edge
+        text(&mut g, 2, 4, "row");
+        let cands = BorderDetector::default().detect(&g);
+        assert_eq!(cands.len(), 1, "{cands:?}");
+        assert_eq!(cands[0].outer, rect(1, 2, 5, 26));
+        assert_eq!(cands[0].content, rect(2, 3, 3, 25));
+    }
+
+    #[test]
+    fn two_titled_panels_side_by_side() {
+        // lazygit-style: `╮╭` touching, each with a `[n]-Title` in its top edge.
+        let mut g = Grid::new(30, 5);
+        draw_box(&mut g, 0, 0, 4, 11);
+        draw_box(&mut g, 0, 12, 4, 29);
+        text(&mut g, 0, 2, "[1]-A");
+        text(&mut g, 0, 14, "[0]-Unstaged");
+        let mut rects: Vec<Rect> = BorderDetector::default().detect(&g).iter().map(|c| c.outer).collect();
+        rects.sort_by_key(|r| r.col0);
+        assert_eq!(rects, vec![rect(0, 0, 5, 12), rect(0, 12, 5, 30)]);
+    }
+
+    #[test]
+    fn scrollbar_thumb_on_a_side_border_is_still_a_box() {
+        let mut g = Grid::new(20, 6);
+        draw_box(&mut g, 0, 0, 5, 19);
+        put(&mut g, 2, 19, '▐');
+        put(&mut g, 3, 19, '▐');
+        assert_eq!(BorderDetector::default().detect(&g).len(), 1);
+    }
+
+    #[test]
+    fn title_must_be_flanked_by_line_and_corners_need_real_sides() {
+        // No dash next to the corner: not accepted (too easy to confuse with text).
+        let mut g = Grid::new(20, 5);
+        draw_box(&mut g, 0, 0, 4, 19);
+        text(&mut g, 0, 1, "title");
+        assert!(BorderDetector::default().detect(&g).is_empty());
+        // Corners on a text row with no sides below: nothing.
+        let mut g = Grid::new(30, 5);
+        text(&mut g, 1, 0, "┌─ just some text ─┐");
+        assert!(BorderDetector::default().detect(&g).is_empty());
+        // A vertical glyph inside the top edge splits it: no box spanning over it.
+        let mut g = Grid::new(30, 6);
+        draw_box(&mut g, 1, 2, 4, 25);
+        put(&mut g, 1, 10, '│');
+        assert!(BorderDetector::default().detect(&g).is_empty());
     }
 
     #[test]

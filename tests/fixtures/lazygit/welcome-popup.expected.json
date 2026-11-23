@@ -62,5 +62,5 @@
     120,
     40
   ],
-  "known_issue": "KNOWN-BAD: background panels not detected (titled borders); only the popup is found. Pane text joined by unwrap"
+  "known_issue": "Popup found. Panels hidden behind the popup are not detected (occluded borders); Pane text joined by unwrap (issue 3)"
 }
