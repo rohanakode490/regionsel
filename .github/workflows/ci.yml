@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  # Formatting, lints and the whole test suite on current stable Rust.
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal --component rustfmt clippy
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+
+  # The minimum supported Rust version (also what Ubuntu 24.04's apt rustc ships).
+  msrv:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install 1.75 --profile minimal
+      - run: cargo +1.75 test --locked
+
+  # The real thing: a popup in a real tmux (>= 3.3; Ubuntu 24.04 ships 3.4), driven through a
+  # pty client. It is timing-based (sleeps), so if it ever flakes, rerun before investigating.
+  e2e:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y tmux
+      - run: tmux -V
+      - run: rustup toolchain install stable --profile minimal
+      - run: cargo build --release --locked
+      - run: python3 scripts/e2e-popup.py
+
+  # The core and the fixtures must build and pass on macOS too (the popup path is Linux-tested).
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - run: cargo test --locked
