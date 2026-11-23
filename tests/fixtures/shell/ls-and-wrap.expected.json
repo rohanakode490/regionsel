@@ -1,0 +1,65 @@
+{
+  "note": "recorded 2026-11-23 from tmux 3.4; app: shell",
+  "probes": [
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "root"
+        },
+        {
+          "kind": "Line",
+          "text": "-rwxr-xr-x 1 root root           97 Oct  1 08:39 2to3-3.10"
+        },
+        {
+          "kind": "Pane",
+          "text": "$ ls -l /usr/bin | head -12\ntotal 694148\n-rwxr-xr-x 1 root root        55744 Aug 25 08:09 [\n-rwxr-xr-x 1 root root           97 Oct  1 08:39 2to3-3.10\n-rwxr-xr-x 1 root root        14640 Mar 31  2024 411toppm\n-rwxr-xr-x 1 root root           38 Apr 10  2024 7z\n-rwxr-xr-x 1 root root           39 Apr 10  2024 7za\n-rwxr-xr-x 1 root root           39 Apr 10  2024 7zr\n-rwxr-xr-x 1 root root        18744 Sep 18 10:52 aa-enabled\n-rwxr-xr-x 1 root root        18744 Sep 18 10:52 aa-exec\n-rwxr-xr-x 1 root root        18736 Sep 18 10:52 aa-features-abi\nlrwxrwxrwx 1 root root           25 Feb  1  2024 aclocal -> /etc/alternatives/aclocal\n-rwxr-xr-x 1 root root        36020 Feb  1  2024 aclocal-1.16\n$ echo $(seq 1 70 | tr '\\n' ' ')\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70\n$\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        }
+      ],
+      "pos": [
+        3,
+        20
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Line",
+          "text": "total 694148"
+        },
+        {
+          "kind": "Pane",
+          "text": "$ ls -l /usr/bin | head -12\ntotal 694148\n-rwxr-xr-x 1 root root        55744 Aug 25 08:09 [\n-rwxr-xr-x 1 root root           97 Oct  1 08:39 2to3-3.10\n-rwxr-xr-x 1 root root        14640 Mar 31  2024 411toppm\n-rwxr-xr-x 1 root root           38 Apr 10  2024 7z\n-rwxr-xr-x 1 root root           39 Apr 10  2024 7za\n-rwxr-xr-x 1 root root           39 Apr 10  2024 7zr\n-rwxr-xr-x 1 root root        18744 Sep 18 10:52 aa-enabled\n-rwxr-xr-x 1 root root        18744 Sep 18 10:52 aa-exec\n-rwxr-xr-x 1 root root        18736 Sep 18 10:52 aa-features-abi\nlrwxrwxrwx 1 root root           25 Feb  1  2024 aclocal -> /etc/alternatives/aclocal\n-rwxr-xr-x 1 root root        36020 Feb  1  2024 aclocal-1.16\n$ echo $(seq 1 70 | tr '\\n' ' ')\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70\n$\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        }
+      ],
+      "pos": [
+        1,
+        20
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "6"
+        },
+        {
+          "kind": "Line",
+          "text": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43"
+        },
+        {
+          "kind": "Pane",
+          "text": "$ ls -l /usr/bin | head -12\ntotal 694148\n-rwxr-xr-x 1 root root        55744 Aug 25 08:09 [\n-rwxr-xr-x 1 root root           97 Oct  1 08:39 2to3-3.10\n-rwxr-xr-x 1 root root        14640 Mar 31  2024 411toppm\n-rwxr-xr-x 1 root root           38 Apr 10  2024 7z\n-rwxr-xr-x 1 root root           39 Apr 10  2024 7za\n-rwxr-xr-x 1 root root           39 Apr 10  2024 7zr\n-rwxr-xr-x 1 root root        18744 Sep 18 10:52 aa-enabled\n-rwxr-xr-x 1 root root        18744 Sep 18 10:52 aa-exec\n-rwxr-xr-x 1 root root        18736 Sep 18 10:52 aa-features-abi\nlrwxrwxrwx 1 root root           25 Feb  1  2024 aclocal -> /etc/alternatives/aclocal\n-rwxr-xr-x 1 root root        36020 Feb  1  2024 aclocal-1.16\n$ echo $(seq 1 70 | tr '\\n' ' ')\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70\n$\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        }
+      ],
+      "pos": [
+        14,
+        10
+      ]
+    }
+  ],
+  "size": [
+    120,
+    40
+  ]
+}

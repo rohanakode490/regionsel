@@ -1,0 +1,10 @@
+┌──────────────────────┐                                    
+│                      │                                    
+│ src/lib.rs           │  [44m  Hello from the block.         [0m  
+│ src/detect.rs        │  [44m  Second line, indented         [0m  
+│ src/ansi.rs          │  [44m    nested detail               [0m  
+│ Cargo.toml           │  [44m                                [0m  
+│                      │                                    
+│                      │                                    
+│                      │                                    
+└──────────────────────┘                                    

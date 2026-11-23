@@ -1,0 +1,49 @@
+{
+  "note": "recorded 2026-11-23 from tmux 3.4; app: vim",
+  "probes": [
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "of"
+        },
+        {
+          "kind": "Line",
+          "text": "line two of the notes                                       |    println!(\"hello\");"
+        },
+        {
+          "kind": "Pane",
+          "text": "line one of the notes                                       |fn main() {\nline two of the notes                                       |    println!(\"hello\");\nline three                                                  |}\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\nb.txt                                                        a.rs\n:set nonumber"
+        }
+      ],
+      "pos": [
+        1,
+        10
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "println!(\"hello\");"
+        },
+        {
+          "kind": "Line",
+          "text": "line two of the notes                                       |    println!(\"hello\");"
+        },
+        {
+          "kind": "Pane",
+          "text": "line one of the notes                                       |fn main() {\nline two of the notes                                       |    println!(\"hello\");\nline three                                                  |}\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\nb.txt                                                        a.rs\n:set nonumber"
+        }
+      ],
+      "pos": [
+        1,
+        75
+      ]
+    }
+  ],
+  "size": [
+    120,
+    40
+  ]
+}

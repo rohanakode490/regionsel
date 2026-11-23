@@ -1,0 +1,40 @@
+[40m [38;5;214mContext:[38;5;73m [1m[97mkind-rsfix [R][0m[40m                          [38;5;73m [1m[95m<0> [0;2m[97m[40mtail [0m[97m[40m [38;5;73m [1m[95m<6> [0;2m[97m[40m1h [0m[97m[40m [38;5;73m [1m[38;5;33m<shift-c> [0;2m[97m[40mClear [0m[40m       [1m[38;5;214m ____  __ ________       [0m[40m 
+ [38;5;214mCluster:[38;5;73m [1m[97mkind-rsfix[0m[40m                              [38;5;73m [1m[95m<1> [0;2m[97m[40mhead [0m[97m[40m [39m        [97m [38;5;73m [1m[38;5;33m<c>       [0;2m[97m[40mCopy [0m[40m        [1m[38;5;214m|    |/  /   __   \______[0m[40m 
+ [38;5;214mUser:[39m   [38;5;73m [1m[97mkind-rsfix[0m[40m                              [38;5;73m [1m[95m<2> [0;2m[97m[40m1m [0m[40m  [97m [39m        [97m [38;5;73m [1m[38;5;33m<m>       [0;2m[97m[40mMark [0m[40m        [1m[38;5;214m|       /\____    /  ___/[0m[40m 
+ [38;5;214mK9s Rev:[38;5;73m [1m[97mv0.51.0[0m[40m                                 [38;5;73m [1m[95m<3> [0;2m[97m[40m5m [0m[40m  [97m [39m        [97m [38;5;73m [1m[38;5;33m<ctrl-s>  [0;2m[97m[40mSave [0m[40m        [1m[38;5;214m|    \   \  /    /\___  \[0m[40m 
+ [38;5;214mK8s Rev:[38;5;73m [1m[97mv1.37.0[0m[40m                                 [38;5;73m [1m[95m<4> [0;2m[97m[40m15m [0m[40m [97m [39m        [97m [38;5;73m [1m[38;5;33m<s>       [0;2m[97m[40mToggle AutoSc[0;1m[38;5;214m[40m|____|\__ \/____//____  /[0m[40m 
+ [38;5;214mCPU:[39m    [38;5;73m [1m[38;5;202mn/a[0m[40m                                     [38;5;73m [1m[95m<5> [0;2m[97m[40m30m [0m[40m [97m [39m        [97m [38;5;73m [1m[38;5;33m<shift-l> [0;2m[97m[40mToggle Column[0;1m[38;5;214m[40m         \/           \/ [0m[40m 
+ [38;5;214mMEM:[39m    [38;5;73m [1m[38;5;202mn/a[0m[40m                                                                                                           
+[38;5;33m┌───────────────────────────────────[38;5;73m Logs([95mdefault/web-6bd469df5c-2ks9b:[1m[39mnginx[0m[38;5;73m[40m)[[1m[32mtail[0m[38;5;73m[40m] [38;5;33m───────────────────────────────────┐
+│[39m                 [1m[38;5;33mAutoscroll:[38;5;34mOn[0m[38;5;33m[40m      [1mColumnLock:[0;2m[90m[40mOff[0m[38;5;33m[40m     [1mFullScreen:[0;2m[90m[40mOff[0m[38;5;33m[40m     [1mTimestamps:[0;2m[90m[40mOff[0m[38;5;33m[40m     [1mWrap:[0;2m[90m[40mOff[0m[40m                 [38;5;33m│
+│[39m [38;5;117m10-listen-on-ipv6-by-default.sh: info: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf[39m                      [38;5;33m│
+│[39m [38;5;117m/docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh[39m                                        [38;5;33m│
+│[39m [38;5;117m/docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh[39m                                    [38;5;33m│
+│[39m [38;5;117m/docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh[39m                                    [38;5;33m│
+│[39m [38;5;117m/docker-entrypoint.sh: Configuration complete; ready for start up[39m                                                    [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: using the "epoll" event method[39m                                                     [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: nginx/1.31.9[39m                                                                       [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: built by gcc 15.2.0 (Alpine 15.2.0) [39m                                               [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: OS: Linux 7.0.0-43-generic[39m                                                         [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1073741816:1073741816[39m                                    [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker processes[39m                                                             [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 37[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 38[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 39[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 40[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 41[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 42[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 43[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 44[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 45[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 46[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 47[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 48[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 49[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 50[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 51[39m                                                            [38;5;33m│
+│[39m [38;5;117m2026/11/23 01:12:34 [notice] 1#1: start worker process 52[39m                                                            [38;5;33m│
+│[39m                                                                                                                      [38;5;33m│
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+[39m [1m[30m[106m <pod> [0m[97m[40m [1m[30m[48;5;214m <logs> [0m[97m[40m [39m                                                                                                      
+                                                                                                                        

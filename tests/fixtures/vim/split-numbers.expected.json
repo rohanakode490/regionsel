@@ -1,0 +1,85 @@
+{
+  "note": "recorded 2026-11-23 from tmux 3.4; app: vim",
+  "probes": [
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "two"
+        },
+        {
+          "kind": "Line",
+          "text": "2 line two of the notes                                   |  2     println!(\"hello\");"
+        },
+        {
+          "kind": "Pane",
+          "text": "  1 line one of the notes                                   |  1 fn main() {\n  2 line two of the notes                                   |  2     println!(\"hello\");\n  3 line three                                              |  3 }\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\nb.txt                                                        a.rs\n\"b.txt\" 3L, 55B"
+        }
+      ],
+      "pos": [
+        1,
+        10
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "println!(\"hello\");"
+        },
+        {
+          "kind": "Line",
+          "text": "2 line two of the notes                                   |  2     println!(\"hello\");"
+        },
+        {
+          "kind": "Pane",
+          "text": "  1 line one of the notes                                   |  1 fn main() {\n  2 line two of the notes                                   |  2     println!(\"hello\");\n  3 line three                                              |  3 }\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\nb.txt                                                        a.rs\n\"b.txt\" 3L, 55B"
+        }
+      ],
+      "pos": [
+        1,
+        75
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "2"
+        },
+        {
+          "kind": "Line",
+          "text": "2 line two of the notes                                   |  2     println!(\"hello\");"
+        },
+        {
+          "kind": "Pane",
+          "text": "  1 line one of the notes                                   |  1 fn main() {\n  2 line two of the notes                                   |  2     println!(\"hello\");\n  3 line three                                              |  3 }\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\nb.txt                                                        a.rs\n\"b.txt\" 3L, 55B"
+        }
+      ],
+      "pos": [
+        1,
+        2
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Line",
+          "text": "~                                                           |~"
+        },
+        {
+          "kind": "Pane",
+          "text": "  1 line one of the notes                                   |  1 fn main() {\n  2 line two of the notes                                   |  2     println!(\"hello\");\n  3 line three                                              |  3 }\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\n~                                                           |~\nb.txt                                                        a.rs\n\"b.txt\" 3L, 55B"
+        }
+      ],
+      "pos": [
+        10,
+        5
+      ]
+    }
+  ],
+  "size": [
+    120,
+    40
+  ]
+}

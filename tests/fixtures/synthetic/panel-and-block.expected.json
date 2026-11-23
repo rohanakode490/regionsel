@@ -1,0 +1,74 @@
+{
+  "note": "SYNTHETIC (hand-built, not a real app): border panel + blue background block side by side",
+  "probes": [
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "src/detect.rs"
+        },
+        {
+          "kind": "Line",
+          "text": "src/detect.rs"
+        },
+        {
+          "kind": "Panel",
+          "text": "src/lib.rs\nsrc/detect.rs\nsrc/ansi.rs\nCargo.toml"
+        },
+        {
+          "kind": "Pane",
+          "text": "┌──────────────────────┐\n│                      │\n│ src/lib.rs           │    Hello from the block.\n│ src/detect.rs        │    Second line, indented\n│ src/ansi.rs          │      nested detail\n│ Cargo.toml           │\n│                      │\n│                      │\n│                      │\n└──────────────────────┘"
+        }
+      ],
+      "pos": [
+        3,
+        5
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Word",
+          "text": "line,"
+        },
+        {
+          "kind": "Line",
+          "text": "Second line, indented"
+        },
+        {
+          "kind": "Block",
+          "text": "Hello from the block.\nSecond line, indented\n  nested detail"
+        },
+        {
+          "kind": "Pane",
+          "text": "┌──────────────────────┐\n│                      │\n│ src/lib.rs           │    Hello from the block.\n│ src/detect.rs        │    Second line, indented\n│ src/ansi.rs          │      nested detail\n│ Cargo.toml           │\n│                      │\n│                      │\n│                      │\n└──────────────────────┘"
+        }
+      ],
+      "pos": [
+        3,
+        35
+      ]
+    },
+    {
+      "ladder": [
+        {
+          "kind": "Line",
+          "text": "│                      │"
+        },
+        {
+          "kind": "Pane",
+          "text": "┌──────────────────────┐\n│                      │\n│ src/lib.rs           │    Hello from the block.\n│ src/detect.rs        │    Second line, indented\n│ src/ansi.rs          │      nested detail\n│ Cargo.toml           │\n│                      │\n│                      │\n│                      │\n└──────────────────────┘"
+        }
+      ],
+      "pos": [
+        8,
+        40
+      ],
+      "note": "KNOWN-BAD snapshot: a pane-level Line spans the whole row and drags in the neighbouring panel's border. Pinned so a fix shows up as a diff."
+    }
+  ],
+  "size": [
+    60,
+    10
+  ]
+}

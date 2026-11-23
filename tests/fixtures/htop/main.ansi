@@ -1,0 +1,40 @@
+
+  [36m  0[1m[39m[[90m                   0.0%[39m][0m [36m  4[1m[39m[[90m                   0.0%[39m][0m [36m  8[1m[39m[[90m                    0.0%[39m][0m[36m 12[1m[39m[[0m[31m||[1m[90m                  5.9%[39m][0m  
+  [36m  1[1m[39m[[90m                   0.0%[39m][0m [36m  5[1m[39m[[90m                   0.0%[39m][0m [36m  9[1m[39m[[90m                    0.0%[39m][0m[36m 13[1m[39m[[90m                    0.0%[39m][0m  
+  [36m  2[1m[39m[[90m                   0.0%[39m][0m [36m  6[1m[39m[[90m                   0.0%[39m][0m [36m 10[1m[39m[[0m[31m||||||[1m[90m             23.5%[39m][0m[36m 14[1m[39m[[0m[31m||||[1m[90m               13.3%[39m][0m  
+  [36m  3[1m[39m[[90m                   0.0%[39m][0m [36m  7[1m[39m[[0m[32m|||||[31m||||||||||||100.0%[1m[39m][0m [36m 11[1m[39m[[90m                    0.0%[39m][0m[36m 15[1m[39m[[0m[31m||[1m[90m                  5.9%[39m][0m  
+  [36mMem[1m[39m[[0m[32m|||||||||||||||||||||||||[35m|[1m[34m|[0m[33m||||||||||||||7.[1m[90m38G/15.4G[39m][0m [36mTasks: [1m234[0m[36m, [1m[32m1309[0m[36m thr[1m[90m, 230 kthr[0m[36m; [1m[32m3[0m[36m running[39m                   
+  [36mSwp[1m[39m[[0m[31m||||||||||[33m|||[1m[90m                             773M/4.00G[39m][0m [36mLoad average: [1m[39m1.37 [36m1.85 [0m[36m2.19 [39m                               
+                                                            [36mUptime: [1m07:15:01[0m                                            
+
+  [32m[42m[[30mMain[32m][39m[49m [34m[44m[[30mI/O[34m][39m[49m                
+[30m[42m    PID USER       PRI  NI  VIRT   RES   SHR S [46m CPU%▽[42mMEM%   TIME+  Command                                              
+[46m 814065 exampleusr  20   0 13872  7624  3620 R  63.2  0.0  0:00.43 htop                                                 
+[39m[49m  68881 exampleusr  20 [1m[90m  0 [0m[32m4[36m948M  568M  135M [1m[90mS [0m 12.6  3.6 26:17.70 /usr/bin/gnome-shell                                 
+ 793601 exampleusr  20 [1m[90m  0 [0m[32m52[36m.5[32mG [36m 172M  115M [32mR [39m 12.6  1.1  0:08.14 [32m/opt/brave.com/brave/brave --type=utility --utility-s
+[39m 794931 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 314M  149M [1m[90mS [0m 12.6  2.0  0:00.39 [32m/opt/brave.com/brave/brave --type=renderer --crashpad
+[39m 795700 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 299M  149M [1m[90mS [0m 12.6  1.9  0:41.36 /opt/brave.com/brave/brave --type=renderer --crashpad
+ 793543 exampleusr  20 [1m[90m  0 [0m[32m53[36m.1[32mG [36m 502M  246M [32mR [39m  6.3  3.2  0:28.00 /opt/brave.com/brave/brave                           
+ 793891 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 304M  150M [1m[90mS [0m  6.3  1.9  0:00.46 [32m/opt/brave.com/brave/brave --type=renderer --crashpad
+[39m 793898 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 304M  149M [1m[90mS [0m  6.3  1.9  0:36.53 /opt/brave.com/brave/brave --type=renderer --crashpad
+ 794618 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 306M  149M [1m[90mS [0m  6.3  1.9  0:35.50 /opt/brave.com/brave/brave --type=renderer --crashpad
+ 794624 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 306M  149M [32mR [39m  6.3  1.9  0:00.42 [32m/opt/brave.com/brave/brave --type=renderer --crashpad
+[39m 795415 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 308M  149M [32mR [39m  6.3  2.0  0:35.95 /opt/brave.com/brave/brave --type=renderer --crashpad
+ 795584 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 320M  149M [1m[90mS [0m  6.3  2.0  0:31.23 /opt/brave.com/brave/brave --type=renderer --crashpad
+ 795590 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 320M  149M [1m[90mS [0m  6.3  2.0  0:00.35 [32m/opt/brave.com/brave/brave --type=renderer --crashpad
+[39m 795780 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 337M  149M [32mR [39m  6.3  2.1  0:34.25 /opt/brave.com/brave/brave --type=renderer --crashpad
+ 795866 exampleusr  20 [1m[90m  0 [31m1[0m[32m448G [36m 336M  154M [1m[90mS [0m  6.3  2.1  0:00.38 [32m/opt/brave.com/brave/brave --type=renderer --crashpad
+[39m      1 [1m[90mroot       [0m 20 [1m[90m  0 [0m[36m24[39m636 [36m14[39m300 [36m 8[39m828 [1m[90mS   0.0 [0m 0.1  0:04.21 /sbin/init splash                                    
+    442 [1m[90mroot       [0m 19 [31m -1 [36m67[39m800 [36m22[39m364 [36m21[39m424 [1m[90mS   0.0 [0m 0.1  0:02.32 /usr/lib/systemd/systemd-journald                    
+    537 [1m[90mroot       [0m 20 [1m[90m  0 [0m[36m31[39m324 [36m 8[39m824 [36m 4[39m688 [1m[90mS   0.0 [0m 0.1  0:01.19 /usr/lib/systemd/systemd-udevd                       
+   1017 [35msystemd-oo [39m 20 [1m[90m  0 [0m[36m17[39m580 [36m 7[39m312 [36m 6[39m404 [1m[90mS   0.0  0.0 [0m 0:10.88 /usr/lib/systemd/systemd-oomd                        
+   1033 [35msystemd-re [39m 20 [1m[90m  0 [0m[36m22[39m240 [36m12[39m860 [36m 9[39m916 [1m[90mS   0.0 [0m 0.1  0:04.58 /usr/lib/systemd/systemd-resolved                    
+   1034 [35msystemd-ti [39m 20 [1m[90m  0 [0m[36m91[39m068 [36m 7[39m552 [36m 6[39m568 [1m[90mS   0.0  0.0 [0m 0:00.22 /usr/lib/systemd/systemd-timesyncd                   
+   1062 [35msystemd-ti [39m 20 [1m[90m  0 [0m[36m91[39m068 [36m 7[39m552 [36m 6[39m568 [1m[90mS   0.0  0.0 [0m 0:00.00 [32m/usr/lib/systemd/systemd-timesyncd[39m                   
+   1326 [1m[90mavahi      [0m 20 [1m[90m  0 [0m[36m 8[39m928 [36m 4[39m644 [36m 3[39m932 [1m[90mS   0.0  0.0 [0m 0:07.16 avahi-daemon: running [exampleusr.local]             
+   1334 [1m[90mroot       [0m 20 [1m[90m  0 [0m[36m13[39m796 [36m 6[39m404 [36m 5[39m508 [1m[90mS   0.0  0.0 [0m 0:00.23 /usr/libexec/bluetooth/bluetoothd                    
+   1339 [35mmessagebus [39m 20 [1m[90m  0 [0m[36m12[39m792 [36m 8[39m196 [36m 4[39m444 [1m[90mS   0.0 [0m 0.1  0:09.81 @dbus-daemon --system --address=systemd: --nofork --n
+   1357 [1m[90mgnome-remo [0m 20 [1m[90m  0 [0m[36m 357M 15[39m676 [36m13[39m308 [1m[90mS   0.0 [0m 0.1  0:00.03 /usr/libexec/gnome-remote-desktop-daemon --system    
+   1387 [1m[90mpolkitd    [0m 20 [1m[90m  0 [0m[36m 383M 15[39m636 [36m 7[39m792 [1m[90mS   0.0 [0m 0.1  0:03.58 /usr/lib/polkit-1/polkitd --no-debug                 
+   1395 [1m[90mroot       [0m 20 [1m[90m  0 [0m[36m 306M  7[39m620 [36m 6[39m668 [1m[90mS   0.0  0.0 [0m 0:00.16 /usr/libexec/power-profiles-daemon                   
+F1[30m[46mHelp  [39m[49mF2[30m[46mSetup [39m[49mF3[30m[46mSearch[39m[49mF4[30m[46mFilter[39m[49mF5[30m[46mTree  [39m[49mF6[30m[46mSortBy[39m[49mF7[30m[46mNice -[39m[49mF8[30m[46mNice +[39m[49mF9[30m[46mKill  [39m[49mF10[30m[46mQuit                                         
