@@ -9,7 +9,11 @@
         },
         {
           "kind": "Line",
-          "text": "line two of the notes                                       |    println!(\"hello\");"
+          "text": "line two of the notes"
+        },
+        {
+          "kind": "Pane",
+          "text": "line one of the notes\nline two of the notes\nline three\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~"
         },
         {
           "kind": "Pane",
@@ -29,7 +33,11 @@
         },
         {
           "kind": "Line",
-          "text": "line two of the notes                                       |    println!(\"hello\");"
+          "text": "println!(\"hello\");"
+        },
+        {
+          "kind": "Pane",
+          "text": "fn main() {\n    println!(\"hello\");\n}\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~"
         },
         {
           "kind": "Pane",
@@ -45,5 +53,6 @@
   "size": [
     120,
     40
-  ]
+  ],
+  "known_issue": "Split panes separated. Remaining: none known"
 }

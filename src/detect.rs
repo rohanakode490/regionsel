@@ -3,6 +3,7 @@
 //!
 //!   BackgroundRunDetector  rectangles of uniform background color  -> Block
 //!   BorderDetector         closed rectangles of box-drawing glyphs -> Panel
+//!   SeparatorDetector      reverse-video vertical dividers (vim splits) -> Pane
 
 use std::collections::HashMap;
 
@@ -385,6 +386,98 @@ impl Detector for BorderDetector {
     }
 }
 
+// ───────────────────────── SeparatorDetector ─────────────────────────
+
+/// Finds split panes divided by a vertical bar drawn in reverse video (vim / `:vsplit`).
+///
+/// Evidence, taken from a recorded vim screen: the divider is a `|` (not a box-drawing
+/// glyph, so `BorderDetector` cannot see it) with the reverse attribute, one cell per row
+/// for as long as the window is tall. Plain (non-reverse) bar columns are deliberately NOT
+/// accepted: markdown tables and box side-edges look exactly like that.
+///
+/// Each separator yields the panes on both sides of it, limited to the rows of the divider
+/// and bounded by the neighbouring separators that share rows. Horizontal splits and
+/// status lines are not handled here (the status bar is picked up as a background block).
+pub struct SeparatorDetector {
+    pub min_rows: u16,
+}
+
+impl Default for SeparatorDetector {
+    fn default() -> Self {
+        SeparatorDetector { min_rows: 3 }
+    }
+}
+
+fn is_vbar(ch: char) -> bool {
+    matches!(ch, '|' | '│' | '┃' | '║' | '¦' | '┆' | '┊')
+}
+
+struct Sep {
+    col: u16,
+    r0: u16,
+    r1: u16, // exclusive
+}
+
+impl Detector for SeparatorDetector {
+    fn name(&self) -> &'static str {
+        "separator"
+    }
+
+    fn detect(&self, grid: &Grid) -> Vec<Candidate> {
+        let is_div = |r: u16, c: u16| {
+            let cell = grid.get(r, c);
+            cell.width > 0 && cell.attrs.reverse && is_vbar(cell.ch)
+        };
+        let mut seps: Vec<Sep> = Vec::new();
+        for c in 0..grid.cols {
+            let mut r = 0;
+            while r < grid.rows {
+                if !is_div(r, c) {
+                    r += 1;
+                    continue;
+                }
+                let start = r;
+                while r < grid.rows && is_div(r, c) {
+                    r += 1;
+                }
+                if r - start >= self.min_rows {
+                    seps.push(Sep { col: c, r0: start, r1: r });
+                }
+            }
+        }
+
+        let overlaps = |a: &Sep, b: &Sep| a.r0 < b.r1 && b.r0 < a.r1;
+        let mut rects: Vec<Rect> = Vec::new();
+        for s in &seps {
+            let left = seps
+                .iter()
+                .filter(|t| t.col < s.col && overlaps(s, t))
+                .map(|t| t.col + 1)
+                .max()
+                .unwrap_or(0);
+            let right =
+                seps.iter().filter(|t| t.col > s.col && overlaps(s, t)).map(|t| t.col).min().unwrap_or(grid.cols);
+            for (c0, c1) in [(left, s.col), (s.col + 1, right)] {
+                let r = Rect { row0: s.r0, col0: c0, row1: s.r1, col1: c1 };
+                if c1 > c0 && ink_rows(grid, r).is_some() && !rects.contains(&r) {
+                    rects.push(r);
+                }
+            }
+        }
+        rects
+            .into_iter()
+            .map(|r| Candidate {
+                kind: RegionKind::Pane,
+                outer: r,
+                content: ink_rows(grid, r).unwrap_or(r),
+                gutter: None,
+                confidence: 0.8,
+                signal: Signal::Separator,
+            })
+            .collect()
+    }
+}
+
 // ───────────────────────── tests ─────────────────────────
 
 #[cfg(test)]
@@ -646,6 +739,68 @@ mod tests {
         let cands = BackgroundRunDetector::default().detect(&g);
         assert_eq!(cands.len(), 1);
         assert_eq!(cands[0].outer, rect(3, 0, 4, 30));
+    }
+
+    // ── separator ──
+
+    fn vsep(g: &mut Grid, col: u16, r0: u16, r1: u16, reverse: bool) {
+        for r in r0..r1 {
+            let mut cell = *g.get(r, col);
+            cell.ch = '|';
+            cell.attrs.reverse = reverse;
+            g.set(r, col, cell);
+        }
+    }
+
+    #[test]
+    fn reverse_video_bar_splits_two_panes() {
+        let mut g = Grid::new(30, 8);
+        vsep(&mut g, 14, 0, 7, true);
+        text(&mut g, 1, 1, "left text");
+        text(&mut g, 1, 16, "right text");
+        let mut rects: Vec<Rect> = SeparatorDetector::default().detect(&g).iter().map(|c| c.outer).collect();
+        rects.sort_by_key(|r| r.col0);
+        assert_eq!(rects, vec![rect(0, 0, 7, 14), rect(0, 15, 7, 30)]);
+    }
+
+    #[test]
+    fn three_panes_dedupe_the_middle_one() {
+        let mut g = Grid::new(40, 6);
+        vsep(&mut g, 12, 0, 5, true);
+        vsep(&mut g, 26, 0, 5, true);
+        for (c, w) in [(1, "a"), (14, "b"), (28, "c")] {
+            text(&mut g, 1, c, w);
+        }
+        let mut rects: Vec<Rect> = SeparatorDetector::default().detect(&g).iter().map(|c| c.outer).collect();
+        rects.sort_by_key(|r| r.col0);
+        assert_eq!(rects, vec![rect(0, 0, 5, 12), rect(0, 13, 5, 26), rect(0, 27, 5, 40)]);
+    }
+
+    #[test]
+    fn plain_bars_and_short_runs_are_not_separators() {
+        let mut g = Grid::new(30, 8);
+        text(&mut g, 1, 1, "x");
+        vsep(&mut g, 14, 0, 7, false); // markdown-table-like column: no reverse video
+        assert!(SeparatorDetector::default().detect(&g).is_empty());
+        let mut g = Grid::new(30, 8);
+        text(&mut g, 1, 1, "x");
+        vsep(&mut g, 14, 2, 4, true); // only 2 rows
+        assert!(SeparatorDetector::default().detect(&g).is_empty());
+    }
+
+    #[test]
+    fn line_and_ladder_stay_inside_their_split_pane() {
+        let mut g = Grid::new(30, 8);
+        vsep(&mut g, 14, 0, 7, true);
+        text(&mut g, 2, 1, "left one");
+        text(&mut g, 3, 1, "left two");
+        text(&mut g, 2, 16, "right one");
+        let a = Engine::with_defaults().analyze(&g);
+        let ladder = a.ladder_at(Pos { row: 2, col: 3 });
+        let kinds: Vec<_> = ladder.iter().map(|t| t.kind).collect();
+        assert_eq!(kinds, vec![RegionKind::Word, RegionKind::Line, RegionKind::Pane, RegionKind::Pane]);
+        assert_eq!(a.extract(&ladder[1]), "left one"); // not "left one|right one"
+        assert_eq!(a.extract(&ladder[2]), "left one\nleft two"); // nothing from the right pane
     }
 
     // ── through the engine ──

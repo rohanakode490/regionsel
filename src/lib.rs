@@ -212,17 +212,11 @@ pub trait Detector: Send + Sync {
 }
 
 // BorderDetector and BackgroundRunDetector live in `detect.rs`.
-pub use detect::{BackgroundRunDetector, BorderDetector};
+pub use detect::{BackgroundRunDetector, BorderDetector, SeparatorDetector};
 
-/// Full-height columns / full-width rows of │ or ─ -> split panes.
-pub struct SeparatorDetector;
 /// Runs of lines sharing deeper indentation or a leading prefix (⏺ > │ ```) -> Block/Code.
 pub struct IndentPrefixDetector;
 
-impl Detector for SeparatorDetector {
-    fn name(&self) -> &'static str { "separator" }
-    fn detect(&self, _grid: &Grid) -> Vec<Candidate> { Vec::new() } // TODO
-}
 impl Detector for IndentPrefixDetector {
     fn name(&self) -> &'static str { "indent-prefix" }
     fn detect(&self, _grid: &Grid) -> Vec<Candidate> { Vec::new() } // TODO
@@ -403,7 +397,7 @@ impl Engine {
             detectors: vec![
                 Box::new(BorderDetector::default()),
                 Box::new(BackgroundRunDetector::default()),
-                Box::new(SeparatorDetector),
+                Box::new(SeparatorDetector::default()),
                 Box::new(IndentPrefixDetector),
             ],
             min_confidence: 0.5,

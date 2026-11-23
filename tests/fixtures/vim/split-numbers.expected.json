@@ -9,7 +9,11 @@
         },
         {
           "kind": "Line",
-          "text": "2 line two of the notes                                   |  2     println!(\"hello\");"
+          "text": "2 line two of the notes"
+        },
+        {
+          "kind": "Pane",
+          "text": "  1 line one of the notes\n  2 line two of the notes\n  3 line three\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~"
         },
         {
           "kind": "Pane",
@@ -29,7 +33,11 @@
         },
         {
           "kind": "Line",
-          "text": "2 line two of the notes                                   |  2     println!(\"hello\");"
+          "text": "2     println!(\"hello\");"
+        },
+        {
+          "kind": "Pane",
+          "text": "  1 fn main() {\n  2     println!(\"hello\");\n  3 }\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~"
         },
         {
           "kind": "Pane",
@@ -49,7 +57,11 @@
         },
         {
           "kind": "Line",
-          "text": "2 line two of the notes                                   |  2     println!(\"hello\");"
+          "text": "2 line two of the notes"
+        },
+        {
+          "kind": "Pane",
+          "text": "  1 line one of the notes\n  2 line two of the notes\n  3 line three\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~"
         },
         {
           "kind": "Pane",
@@ -65,7 +77,11 @@
       "ladder": [
         {
           "kind": "Line",
-          "text": "~                                                           |~"
+          "text": "~"
+        },
+        {
+          "kind": "Pane",
+          "text": "  1 line one of the notes\n  2 line two of the notes\n  3 line three\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~"
         },
         {
           "kind": "Pane",
@@ -81,5 +97,6 @@
   "size": [
     120,
     40
-  ]
+  ],
+  "known_issue": "Split panes now separated. Remaining: the line-number gutter ('  1 ') is copied as text (no gutter detection yet)"
 }
