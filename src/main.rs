@@ -1,4 +1,5 @@
 mod clipboard;
+mod settings;
 mod snapshot;
 mod tmux;
 mod ui;
@@ -12,9 +13,11 @@ const USAGE: &str = "\
 regionsel: region-aware copy for terminal screens
 
   regionsel init                      print the tmux.conf snippet
+  regionsel config                    print the default config (key bindings, scrollback);
+                                      save it to ~/.config/regionsel/config and edit
   regionsel popup <pane> [--scrollback N] [--click X,Y]
                                       open the picker over a pane (used by the key binding).
-                                      --scrollback: history lines to include (default 2000, 0 = none)
+                                      --scrollback: history lines to include (config default 2000, 0 = none)
                                       --click: pane-relative mouse position; opens with that word selected
   regionsel pick --pane <pane>        the picker itself (runs inside the popup; captures live)
   regionsel pick --snapshot F --size WxH --cursor X,Y [--click]
@@ -29,6 +32,10 @@ fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
     let result = match args.first().map(String::as_str) {
         Some("init") => cmd_init(),
+        Some("config") => {
+            print!("{}", regionsel::keymap::DEFAULT_CONFIG);
+            Ok(())
+        }
         Some("popup") => cmd_popup(&args[1..]),
         Some("pick") => cmd_pick(&args[1..]),
         Some("dump") => cmd_dump(&args[1..]),
@@ -66,8 +73,6 @@ fn cmd_init() -> Result<(), String> {
     Ok(())
 }
 
-/// Default number of scrollback lines included in a capture.
-const DEFAULT_SCROLLBACK: u32 = 2000;
 
 /// A capture plus how it maps onto the pane: `hist` rows of scrollback above `info.height`.
 struct Captured {
@@ -91,7 +96,8 @@ fn cmd_popup(args: &[String]) -> Result<(), String> {
     let pane = args.first().ok_or("usage: regionsel popup <pane-id> [--scrollback N] [--click X,Y]")?;
     let exe = env::current_exe().map_err(|e| e.to_string())?;
     // Capture NOW, before the popup exists: what you select is what you saw at the keypress.
-    let cap = capture_pane(pane, args, DEFAULT_SCROLLBACK)?;
+    let cfg = settings::load();
+    let cap = capture_pane(pane, args, cfg.config.scrollback)?;
     let snap = snapshot::write(&cap.raw).map_err(|e| format!("cannot write snapshot: {e}"))?;
     let click = flag(args, "--click").and_then(snapshot::parse_cursor);
     // Pane coordinates -> grid coordinates: the scrollback sits above the visible screen.
@@ -108,6 +114,12 @@ fn cmd_popup(args: &[String]) -> Result<(), String> {
 }
 
 fn cmd_pick(args: &[String]) -> Result<(), String> {
+    let cfg = settings::load();
+    if let Some(first) = cfg.warnings.first() {
+        // The popup hides stderr, so say it in tmux's status line.
+        let more = if cfg.warnings.len() > 1 { format!(" (+{} more)", cfg.warnings.len() - 1) } else { String::new() };
+        tmux::message(&format!("regionsel: {first}{more}"));
+    }
     let (grid, start) = if let Some(file) = flag(args, "--snapshot") {
         let (w, h) = flag(args, "--size").and_then(snapshot::parse_size).ok_or("--snapshot needs --size WxH")?;
         let (cx, cy) = flag(args, "--cursor").and_then(snapshot::parse_cursor).unwrap_or((0, 0));
@@ -115,7 +127,7 @@ fn cmd_pick(args: &[String]) -> Result<(), String> {
         (ansi::grid_from_capture(&raw, w, h), Pos { row: cy.min(h.saturating_sub(1)), col: cx.min(w.saturating_sub(1)) })
     } else {
         let pane = flag(args, "--pane").ok_or("usage: regionsel pick --pane <pane-id> | --snapshot F --size WxH")?;
-        let cap = capture_pane(pane, args, DEFAULT_SCROLLBACK)?;
+        let cap = capture_pane(pane, args, cfg.config.scrollback)?;
         let (w, h) = (cap.info.width, cap.rows);
         let start = Pos {
             row: (cap.info.cursor_y + cap.hist).min(h.saturating_sub(1)),
@@ -126,7 +138,7 @@ fn cmd_pick(args: &[String]) -> Result<(), String> {
     let engine = Engine::with_defaults();
     let analysis = engine.analyze(&grid);
 
-    let picked = ui::run(&analysis, start, args.iter().any(|a| a == "--click"))
+    let picked = ui::run(&analysis, start, args.iter().any(|a| a == "--click"), &cfg.config)
         .map_err(|e| format!("terminal error: {e}"))?;
 
     if let Some(text) = picked {

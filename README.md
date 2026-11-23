@@ -18,7 +18,25 @@ Requires tmux >= 3.3 (`display-popup -B`). Check with `tmux -V`.
     v  V  Ctrl-v       manual char / line / block selection (literal copy)
     Enter              copy (no selection yet = copy the cursor's line)
     Ctrl-d Ctrl-u      half page down / up       Ctrl-f Ctrl-b  PgDn PgUp   full page
-    Esc  q  Ctrl-c     cancel
+    Esc  q  Ctrl-c     cancel                    (all of these can be rebound, see Configuration)
+
+## Configuration
+Key bindings and the scrollback size are configurable. Print the defaults, save them, edit:
+
+    mkdir -p ~/.config/regionsel && regionsel config > ~/.config/regionsel/config
+
+Your file is applied on top of the built-in defaults (`$XDG_CONFIG_HOME/regionsel/config`, or
+`$REGIONSEL_CONFIG`). The format is a few lines, documented in the file itself:
+
+    unbind q                  # stop q from cancelling
+    bind x cancel
+    bind ctrl-j half-page-down
+    unbind g g                # free "g" ...
+    bind g top                # ... to use it on its own
+    scrollback 5000
+
+A typo never disables copying: the bad line is skipped and tmux shows "config line N: ...".
+Counts (`5j`) are fixed; the digits 1-9 cannot be rebound.
 
 ## Scrollback and mouse
 The popup captures up to 2000 lines of history above the visible screen (`popup <pane>

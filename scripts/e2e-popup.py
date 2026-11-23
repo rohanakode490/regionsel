@@ -12,7 +12,9 @@ inside the popup grows the selection one level).
 import os, pty, subprocess, sys, time, fcntl, termios, struct, glob, shutil, tempfile
 EXE=os.path.abspath("target/release/regionsel")
 RT=tempfile.mkdtemp(prefix="regionsel-e2e-"); SP=RT
-env=dict(os.environ, XDG_RUNTIME_DIR=RT, TERM="tmux-256color")
+XDG=os.path.join(RT,"xdg"); os.makedirs(XDG+"/regionsel")
+env=dict(os.environ, XDG_RUNTIME_DIR=RT, XDG_CONFIG_HOME=XDG, TERM="tmux-256color")
+env.pop("REGIONSEL_CONFIG",None)
 env.pop("TMUX",None)
 T=["/usr/bin/tmux","-L","rsfix","-f","/dev/null"]
 def tm(*a,**k): return subprocess.run(T+list(a),env=env,capture_output=True,text=True,**k)
@@ -93,6 +95,26 @@ os.write(fd,sgr(8,col,row,True)+sgr(8,col,row,False)); time.sleep(1.5)
 os.write(fd,sgr(0,col,row,True)+sgr(0,col,row,False)); time.sleep(0.5)   # plain click inside the popup
 os.write(fd,b"\r"); time.sleep(1.2); drain()
 results.append(("G second click inside the popup grows word -> line", tm("show-buffer").stdout.strip()=="alpha beta gamma"))
+# ---- Test I/J: a user config changes the keys inside the real popup, and a typo warns
+tm("unbind-key","-n","M-MouseDown1Pane")
+tm("send-keys","-t","fx","clear; echo config-test-line","Enter"); time.sleep(0.8)
+open(XDG+"/regionsel/config","w").write("unbind q\nbind x cancel\nbind y bogus-action\n")
+tm("delete-buffer"); tm("kill-session","-t","ignore-errors")
+subprocess.Popen(T+["run-shell","-b",f"{EXE} popup {pane}"],env=env)
+time.sleep(1.2)
+os.write(fd,b"q"); time.sleep(0.3)               # unbound: must NOT close the popup
+os.write(fd,b"k"); time.sleep(0.2); os.write(fd,b"\r"); time.sleep(1.2); drain()   # still alive: copies a line
+results.append(("I unbound q no longer cancels (popup still running, Enter copied)", "config-test-line" in tm("show-buffer").stdout))
+msgs=tm("show-messages").stdout
+results.append(("J a bad config line is reported in tmux messages with its line number", "config line 3: unknown action 'bogus-action'" in msgs))
+tm("delete-buffer")
+subprocess.Popen(T+["run-shell","-b",f"{EXE} popup {pane}"],env=env)
+time.sleep(1.2)
+os.write(fd,b"x"); time.sleep(0.8)               # remapped to cancel: popup closes
+os.write(fd,b"\r"); time.sleep(0.8); drain()     # Enter now lands in the shell, not the picker
+results.append(("I bind x cancel closes the popup without copying", tm("show-buffer").stdout=="" ))
+os.remove(XDG+"/regionsel/config")
+
 # ---- Test H: the viewport. A 120x40 snapshot shown in a 60x10 screen must scroll, not clip.
 # Own tmux server, no client attached: with a client attached tmux would size the window to it.
 V=["/usr/bin/tmux","-L","rsvp","-f","/dev/null"]

@@ -9,6 +9,7 @@
 
 pub mod ansi;
 pub mod detect;
+pub mod keymap;
 pub mod view;
 
 // ───────────────────────── 1. Input model ─────────────────────────

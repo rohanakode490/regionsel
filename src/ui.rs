@@ -14,26 +14,33 @@ use crossterm::style::{
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::{cursor, execute, queue};
 
+use regionsel::keymap::{Config, KeyInput, KeyName, Keymap};
 use regionsel::view::Viewport;
-use regionsel::{Action, Analysis, Attrs, Color, Key, Pos, Session};
+use regionsel::{Action, Analysis, Attrs, Color, Pos, Session};
 
 /// Rows moved per mouse-wheel notch.
 const WHEEL_ROWS: i32 = 3;
 
 /// Returns Some(text) if the user pressed Enter, None if they cancelled.
 /// `click_start`: the popup was opened by a mouse click, so start with that cell selected.
-pub fn run(analysis: &Analysis, start: Pos, click_start: bool) -> io::Result<Option<String>> {
+pub fn run(analysis: &Analysis, start: Pos, click_start: bool, config: &Config) -> io::Result<Option<String>> {
     let mut out = io::stdout();
     terminal::enable_raw_mode()?;
     execute!(out, EnterAlternateScreen, EnableMouseCapture, cursor::Hide)?;
-    let result = event_loop(&mut out, analysis, start, click_start);
+    let result = event_loop(&mut out, analysis, start, click_start, config);
     // Always restore the terminal, even if the loop errored.
     let _ = execute!(out, cursor::Show, DisableMouseCapture, LeaveAlternateScreen);
     let _ = terminal::disable_raw_mode();
     result
 }
 
-fn event_loop(out: &mut impl Write, analysis: &Analysis, start: Pos, click_start: bool) -> io::Result<Option<String>> {
+fn event_loop(
+    out: &mut impl Write,
+    analysis: &Analysis,
+    start: Pos,
+    click_start: bool,
+    config: &Config,
+) -> io::Result<Option<String>> {
     let grid = analysis.grid;
     let (tw, th) = terminal::size()?;
     let mut view = Viewport::new(grid.cols, grid.rows, tw, th);
@@ -47,7 +54,7 @@ fn event_loop(out: &mut impl Write, analysis: &Analysis, start: Pos, click_start
     loop {
         match event::read()? {
             Event::Key(k) if k.kind != KeyEventKind::Release => {
-                if let Some((key, repeat)) = keymap.feed(k, u32::from(view.height)) {
+                if let Some((key, repeat)) = keymap.feed(config, to_input(&k), u32::from(view.height)) {
                     for _ in 0..repeat {
                         match session.handle(key) {
                             Action::Copy(text) => return Ok(Some(text)),
@@ -91,84 +98,28 @@ fn event_loop(out: &mut impl Write, analysis: &Analysis, start: Pos, click_start
 
 // ───────────── keys ─────────────
 
-/// vim-style bindings with count prefixes (5j, 3w) and `gg`.
-/// This is the ONLY place that knows about physical keys; make it configurable later.
-#[derive(Default)]
-struct Keymap {
-    pending_g: bool,
-    count: Option<u32>,
-}
-
-impl Keymap {
-    /// `page`: rows on screen, for the page-wise scroll keys.
-    fn feed(&mut self, ev: KeyEvent, page: u32) -> Option<(Key, u32)> {
-        let ctrl = ev.modifiers.contains(KeyModifiers::CONTROL);
-        let half = (page / 2).max(1);
-        let page = page.saturating_sub(1).max(1); // keep one row of context, like vim
-        match (ev.code, ctrl) {
-            (KeyCode::Char('d'), true) => return self.scroll(Key::Down, half),
-            (KeyCode::Char('u'), true) => return self.scroll(Key::Up, half),
-            (KeyCode::Char('f'), true) | (KeyCode::PageDown, _) => return self.scroll(Key::Down, page),
-            (KeyCode::Char('b'), true) | (KeyCode::PageUp, _) => return self.scroll(Key::Up, page),
-            _ => {}
-        }
-
-        if self.pending_g {
-            self.pending_g = false;
-            if ev.code == KeyCode::Char('g') {
-                return self.emit(Key::Top);
-            }
-        }
-
-        let key = match (ev.code, ctrl) {
-            (KeyCode::Char('c'), true) | (KeyCode::Esc, _) | (KeyCode::Char('q'), false) => Key::Cancel,
-            (KeyCode::Char('v'), true) => Key::VisualRect,
-            (KeyCode::Char(d), false) if d.is_ascii_digit() && (d != '0' || self.count.is_some()) => {
-                let digit = d.to_digit(10).unwrap_or(0);
-                self.count = Some(self.count.unwrap_or(0).saturating_mul(10).saturating_add(digit));
-                return None;
-            }
-            (KeyCode::Char('g'), false) => {
-                self.pending_g = true;
-                return None;
-            }
-            (KeyCode::Char('h'), false) | (KeyCode::Left, _) => Key::Left,
-            (KeyCode::Char('j'), false) | (KeyCode::Down, _) => Key::Down,
-            (KeyCode::Char('k'), false) | (KeyCode::Up, _) => Key::Up,
-            (KeyCode::Char('l'), false) | (KeyCode::Right, _) => Key::Right,
-            (KeyCode::Char('w'), false) => Key::WordFwd,
-            (KeyCode::Char('b'), false) => Key::WordBack,
-            (KeyCode::Char('0'), false) => Key::LineStart,
-            (KeyCode::Char('$'), false) => Key::LineEnd,
-            (KeyCode::Char('G'), false) => Key::Bottom,
-            (KeyCode::Char(' '), _) => Key::Expand,
-            (KeyCode::Backspace, _) => Key::Shrink,
-            (KeyCode::Char('v'), false) => Key::VisualChar,
-            (KeyCode::Char('V'), false) => Key::VisualLine,
-            (KeyCode::Enter, _) => Key::Copy,
-            _ => {
-                self.count = None;
-                return None;
-            }
-        };
-        self.emit(key)
-    }
-
-    /// Half/full page keys move the cursor `n` rows; the viewport follows it.
-    fn scroll(&mut self, key: Key, n: u32) -> Option<(Key, u32)> {
-        self.pending_g = false;
-        self.count = None;
-        Some((key, n))
-    }
-
-    fn emit(&mut self, key: Key) -> Option<(Key, u32)> {
-        let n = self.count.take().unwrap_or(1).clamp(1, 9999);
-        let repeatable = matches!(
-            key,
-            Key::Left | Key::Right | Key::Up | Key::Down | Key::WordFwd | Key::WordBack | Key::Expand | Key::Shrink
-        );
-        Some((key, if repeatable { n } else { 1 }))
-    }
+/// crossterm key event -> the toolkit-neutral key the core keymap understands.
+/// This is the ONLY place that knows about physical keys; bindings live in the config.
+fn to_input(ev: &KeyEvent) -> Option<KeyInput> {
+    let ctrl = ev.modifiers.contains(KeyModifiers::CONTROL);
+    let name = match ev.code {
+        KeyCode::Char(' ') => KeyName::Space,
+        KeyCode::Char(c) => KeyName::Char(if ctrl { c.to_ascii_lowercase() } else { c }),
+        KeyCode::Enter => KeyName::Enter,
+        KeyCode::Esc => KeyName::Esc,
+        KeyCode::Backspace => KeyName::Backspace,
+        KeyCode::Tab => KeyName::Tab,
+        KeyCode::Up => KeyName::Up,
+        KeyCode::Down => KeyName::Down,
+        KeyCode::Left => KeyName::Left,
+        KeyCode::Right => KeyName::Right,
+        KeyCode::PageUp => KeyName::PageUp,
+        KeyCode::PageDown => KeyName::PageDown,
+        KeyCode::Home => KeyName::Home,
+        KeyCode::End => KeyName::End,
+        _ => return None,
+    };
+    Some(KeyInput { name, ctrl })
 }
 
 // ───────────── drawing ─────────────
