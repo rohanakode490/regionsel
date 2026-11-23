@@ -1,4 +1,5 @@
 {
+  "known_issue": "Split panes now separated. Remaining: the line-number gutter ('  1 ') is copied as text (no gutter detection yet)",
   "note": "recorded 2026-11-23 from tmux 3.4; app: vim",
   "probes": [
     {
@@ -10,6 +11,10 @@
         {
           "kind": "Line",
           "text": "2 line two of the notes"
+        },
+        {
+          "kind": "Block",
+          "text": "1 line one of the notes\n2 line two of the notes\n3 line three"
         },
         {
           "kind": "Pane",
@@ -36,6 +41,10 @@
           "text": "2     println!(\"hello\");"
         },
         {
+          "kind": "Block",
+          "text": "1 fn main() {\n2     println!(\"hello\");\n3 }"
+        },
+        {
           "kind": "Pane",
           "text": "  1 fn main() {\n  2     println!(\"hello\");\n  3 }\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~\n~"
         },
@@ -58,6 +67,10 @@
         {
           "kind": "Line",
           "text": "2 line two of the notes"
+        },
+        {
+          "kind": "Block",
+          "text": "1 line one of the notes\n2 line two of the notes\n3 line three"
         },
         {
           "kind": "Pane",
@@ -97,6 +110,5 @@
   "size": [
     120,
     40
-  ],
-  "known_issue": "Split panes now separated. Remaining: the line-number gutter ('  1 ') is copied as text (no gutter detection yet)"
+  ]
 }

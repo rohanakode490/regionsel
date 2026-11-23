@@ -160,6 +160,7 @@ pub struct RegionTree {
 
 impl RegionTree {
     pub fn get(&self, id: RegionId) -> &Region { &self.regions[id.0] }
+    pub fn regions(&self) -> &[Region] { &self.regions }
 
     /// Innermost-first chain of regions containing `p` (the "expansion ladder" backbone).
     pub fn chain_at(&self, p: Pos) -> Vec<RegionId> {
@@ -211,16 +212,18 @@ pub trait Detector: Send + Sync {
     fn detect(&self, grid: &Grid) -> Vec<Candidate>;
 }
 
-// BorderDetector and BackgroundRunDetector live in `detect.rs`.
-pub use detect::{BackgroundRunDetector, BorderDetector, SeparatorDetector};
-
-/// Runs of lines sharing deeper indentation or a leading prefix (⏺ > │ ```) -> Block/Code.
-pub struct IndentPrefixDetector;
-
-impl Detector for IndentPrefixDetector {
-    fn name(&self) -> &'static str { "indent-prefix" }
-    fn detect(&self, _grid: &Grid) -> Vec<Candidate> { Vec::new() } // TODO
+/// Second-phase detector: looks for structure INSIDE an area that phase one already found
+/// (a panel's interior, or the whole screen). Splitting text into paragraphs needs to know
+/// where the panels are, otherwise a paragraph would cut through one.
+pub trait Refiner: Send + Sync {
+    fn name(&self) -> &'static str;
+    fn refine(&self, grid: &Grid, area: Rect) -> Vec<Candidate>;
 }
+
+// The detectors live in `detect.rs`.
+pub use detect::{BackgroundRunDetector, BorderDetector, IndentPrefixDetector, SeparatorDetector};
+
+
 
 /// Merge candidates into a containment tree. Larger first; partial overlaps lose to
 /// whatever was inserted first (higher confidence among equal areas).
@@ -304,18 +307,17 @@ pub fn extract(grid: &Grid, rect: Rect, opts: &ExtractOptions) -> String {
             if opts.trim_trailing_ws { s.trim_end().to_string() } else { s }
         })
         .collect();
-    if opts.dedent {
-        dedent(&mut lines);
-    }
+    // The wrapper that produced the soft wraps had the width MINUS the indent we strip.
+    let removed = if opts.dedent { dedent(&mut lines) } else { 0 };
     if opts.unwrap {
-        lines = unwrap_soft_wraps(lines, rect.width());
+        lines = unwrap_soft_wraps(lines, rect.width().saturating_sub(removed));
     }
     lines.join("\n")
 }
 
-/// Remove the common leading whitespace. Counted in chars, never bytes, so a multibyte
-/// character can't be split.
-fn dedent(lines: &mut [String]) {
+/// Remove the common leading whitespace and return how many columns were removed. Counted in
+/// chars, never bytes, so a multibyte character can't be split.
+fn dedent(lines: &mut [String]) -> u16 {
     let lead = |l: &str| l.chars().take_while(|c| c.is_whitespace()).count();
     let indent = lines.iter().filter(|l| !l.trim().is_empty()).map(|l| lead(l)).min().unwrap_or(0);
     if indent > 0 {
@@ -323,6 +325,7 @@ fn dedent(lines: &mut [String]) {
             *l = l.chars().skip(indent).collect();
         }
     }
+    indent as u16
 }
 
 /// Heuristic: `prev` was soft-wrapped onto `next` if a word-wrapper would have had to break
@@ -388,6 +391,7 @@ pub struct Target {
 
 pub struct Engine {
     detectors: Vec<Box<dyn Detector>>,
+    refiners: Vec<Box<dyn Refiner>>,
     pub min_confidence: f32,
 }
 
@@ -398,14 +402,30 @@ impl Engine {
                 Box::new(BorderDetector::default()),
                 Box::new(BackgroundRunDetector::default()),
                 Box::new(SeparatorDetector::default()),
-                Box::new(IndentPrefixDetector),
             ],
+            refiners: vec![Box::new(IndentPrefixDetector::default())],
             min_confidence: 0.5,
         }
     }
 
     pub fn analyze<'g>(&self, grid: &'g Grid) -> Analysis<'g> {
-        let cands = self.detectors.iter().flat_map(|d| d.detect(grid)).collect();
+        let mut cands: Vec<Candidate> = self.detectors.iter().flat_map(|d| d.detect(grid)).collect();
+        let first = build_tree(grid.bounds(), cands.clone(), self.min_confidence);
+        // Phase two: refine inside every region. A refined candidate must not partially
+        // overlap (cross) any region from phase one: containing or avoiding one is fine,
+        // cutting through one is not, so a paragraph can never destroy a panel.
+        let mut extra: Vec<Candidate> = Vec::new();
+        for region in first.regions() {
+            for refiner in &self.refiners {
+                extra.extend(
+                    refiner
+                        .refine(grid, region.content)
+                        .into_iter()
+                        .filter(|c| !first.regions().iter().any(|r| r.outer.crosses(&c.outer))),
+                );
+            }
+        }
+        cands.extend(extra);
         Analysis { grid, tree: build_tree(grid.bounds(), cands, self.min_confidence) }
     }
 }

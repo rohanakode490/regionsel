@@ -13,6 +13,10 @@
           "text": "1) If you want to learn about lazygit's features, watch this vid:"
         },
         {
+          "kind": "Paragraph",
+          "text": "1) If you want to learn about lazygit's features, watch this vid:\n     https://youtu.be/CPLdltN7wgE"
+        },
+        {
           "kind": "Panel",
           "text": "Thanks for using lazygit! Seriously you rock. Three things to share with you:\n\n 1) If you want to learn about lazygit's features, watch this vid:\n      https://youtu.be/CPLdltN7wgE\n\n 2) Be sure to read the latest release notes at:\n      https://github.com/jesseduffield/lazygit/releases\n\n 3) If lazygit has made your life easier, you can say thanks by clicking the\n    donate button at the bottom right. Donation does not grant priority support,\n    but it is much appreciated.\n\nPress <enter> to get started."
         },

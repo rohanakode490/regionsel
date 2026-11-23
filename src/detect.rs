@@ -4,10 +4,11 @@
 //!   BackgroundRunDetector  rectangles of uniform background color  -> Block
 //!   BorderDetector         closed rectangles of box-drawing glyphs -> Panel
 //!   SeparatorDetector      reverse-video vertical dividers (vim splits) -> Pane
+//!   IndentPrefixDetector   (refiner) blank-separated paragraphs, indented bodies -> Paragraph/Block
 
 use std::collections::HashMap;
 
-use crate::{Candidate, Cell, Color, Detector, Grid, Rect, RegionKind, Signal};
+use crate::{Candidate, Cell, Color, Detector, Grid, Rect, Refiner, RegionKind, Signal};
 
 // ───────────────────────── shared helpers ─────────────────────────
 
@@ -478,6 +479,119 @@ impl Detector for SeparatorDetector {
     }
 }
 
+// ───────────────────────── IndentPrefixDetector ─────────────────────────
+
+/// Second-phase detector: finds text structure inside an area, from layout alone.
+///
+/// Evidence, from a recorded Claude Code screen: a response is a body indented by 2 columns
+/// under rows at column 0 (the `❯` prompt, the `✻ Worked for` line, the input-box rules), with
+/// blank rows between paragraphs. The same shape is `git log` (indented commit message under
+/// a `commit` line). Two signals, both free of app-specific glyphs:
+///
+///  1. Paragraph: a run of 2+ non-blank rows between blank rows (only when the area has more
+///     than one such run; a single run is the area itself).
+///  2. Block: a run of rows indented at least `min_indent_delta` columns deeper than the
+///     area's left margin (its least-indented row), blank rows allowed inside, 2+ text rows.
+///
+/// Prefix markers (`⏺`, `>`) are NOT handled: the capture had no bullet on response bodies,
+/// so there is no evidence to build on yet.
+pub struct IndentPrefixDetector {
+    pub min_indent_delta: u16,
+}
+
+impl Default for IndentPrefixDetector {
+    fn default() -> Self {
+        IndentPrefixDetector { min_indent_delta: 2 }
+    }
+}
+
+impl Refiner for IndentPrefixDetector {
+    fn name(&self) -> &'static str {
+        "indent-prefix"
+    }
+
+    fn refine(&self, grid: &Grid, area: Rect) -> Vec<Candidate> {
+        if area.row1 <= area.row0 || area.col1 <= area.col0 {
+            return Vec::new();
+        }
+        // indent[i] = columns before the first ink on row area.row0 + i, None if blank.
+        let indent: Vec<Option<u16>> = (area.row0..area.row1)
+            .map(|r| {
+                (area.col0..area.col1)
+                    .find(|&c| {
+                        let cell = grid.get(r, c);
+                        cell.width > 0 && !is_blank(cell)
+                    })
+                    .map(|c| c - area.col0)
+            })
+            .collect();
+        let rect = |i0: usize, i1: usize| Rect {
+            row0: area.row0 + i0 as u16,
+            col0: area.col0,
+            row1: area.row0 + i1 as u16,
+            col1: area.col1,
+        };
+        let mut out = Vec::new();
+
+        // 1. Paragraphs.
+        let mut runs: Vec<(usize, usize)> = Vec::new();
+        let mut i = 0;
+        while i < indent.len() {
+            if indent[i].is_none() {
+                i += 1;
+                continue;
+            }
+            let start = i;
+            while i < indent.len() && indent[i].is_some() {
+                i += 1;
+            }
+            runs.push((start, i));
+        }
+        if runs.len() >= 2 {
+            for &(a, b) in runs.iter().filter(|&&(a, b)| b - a >= 2) {
+                out.push(Candidate {
+                    kind: RegionKind::Paragraph,
+                    outer: rect(a, b),
+                    content: rect(a, b),
+                    gutter: None,
+                    confidence: 0.6,
+                    signal: Signal::Indent,
+                });
+            }
+        }
+
+        // 2. Indented bodies.
+        let Some(margin) = indent.iter().flatten().copied().min() else { return out };
+        let is_body = |i: usize| indent[i].is_some_and(|n| n >= margin + self.min_indent_delta);
+        let mut i = 0;
+        while i < indent.len() {
+            if !is_body(i) {
+                i += 1;
+                continue;
+            }
+            let (start, mut last, mut rows) = (i, i, 0);
+            while i < indent.len() && (is_body(i) || indent[i].is_none()) {
+                if is_body(i) {
+                    last = i;
+                    rows += 1;
+                }
+                i += 1;
+            }
+            if rows >= 2 {
+                out.push(Candidate {
+                    kind: RegionKind::Block,
+                    outer: rect(start, last + 1),
+                    content: rect(start, last + 1),
+                    gutter: None,
+                    confidence: 0.65,
+                    signal: Signal::Indent,
+                });
+            }
+        }
+        out
+    }
+}
+
 // ───────────────────────── tests ─────────────────────────
 
 #[cfg(test)]
@@ -739,6 +853,65 @@ mod tests {
         let cands = BackgroundRunDetector::default().detect(&g);
         assert_eq!(cands.len(), 1);
         assert_eq!(cands[0].outer, rect(3, 0, 4, 30));
+    }
+
+    // ── indent / paragraph refiner ──
+
+    fn grid_lines(lines: &[&str], cols: u16) -> Grid {
+        let mut g = Grid::new(cols, lines.len() as u16);
+        for (r, l) in lines.iter().enumerate() {
+            text(&mut g, r as u16, 0, l);
+        }
+        g
+    }
+
+    #[test]
+    fn paragraphs_are_blank_separated_runs_of_two_or_more_rows() {
+        let g = grid_lines(&["one a", "one b", "", "single", "", "three a", "three b", "three c"], 20);
+        let c = IndentPrefixDetector::default().refine(&g, g.bounds());
+        let kinds: Vec<_> = c.iter().map(|c| (c.kind, c.outer)).collect();
+        assert_eq!(kinds, vec![(RegionKind::Paragraph, rect(0, 0, 2, 20)), (RegionKind::Paragraph, rect(5, 0, 8, 20))]);
+    }
+
+    #[test]
+    fn a_single_run_is_not_a_paragraph_split() {
+        let g = grid_lines(&["a", "b", "c"], 10);
+        assert!(IndentPrefixDetector::default().refine(&g, g.bounds()).is_empty());
+    }
+
+    #[test]
+    fn indented_body_under_margin_rows_is_a_block() {
+        let g = grid_lines(&["> prompt", "", "  first para", "  more", "", "  second para", "", "* footer"], 20);
+        let c = IndentPrefixDetector::default().refine(&g, g.bounds());
+        let blocks: Vec<Rect> = c.iter().filter(|c| c.kind == RegionKind::Block).map(|c| c.outer).collect();
+        assert_eq!(blocks, vec![rect(2, 0, 6, 20)]); // trailing blank row excluded
+    }
+
+    #[test]
+    fn uniform_indent_has_no_margin_to_contrast_against() {
+        let g = grid_lines(&["  a", "  b", "", "  c", "  d"], 20);
+        let c = IndentPrefixDetector::default().refine(&g, g.bounds());
+        assert!(c.iter().all(|c| c.kind != RegionKind::Block));
+    }
+
+    #[test]
+    fn engine_ladder_word_line_paragraph_block_pane_and_unwrap_in_block() {
+        // width 30. "  3. aaa bbb ccc ddd eee fff" is 29 wide, so "ggg" was wrapped onto the next row.
+        let g = grid_lines(
+            &["> question", "", "  1. short item", "  2. a b", "  more words", "", "  3. aaa bbb ccc ddd eee fff", "  ggg end", "", "done"],
+            30,
+        );
+        let a = Engine::with_defaults().analyze(&g);
+        let ladder = a.ladder_at(Pos { row: 3, col: 5 });
+        let kinds: Vec<_> = ladder.iter().map(|t| t.kind).collect();
+        assert_eq!(
+            kinds,
+            vec![RegionKind::Word, RegionKind::Line, RegionKind::Paragraph, RegionKind::Block, RegionKind::Pane]
+        );
+        assert_eq!(a.extract(&ladder[2]), "1. short item\n2. a b\nmore words");
+        let block = a.extract(&ladder[3]);
+        assert!(block.contains("3. aaa bbb ccc ddd eee fff ggg end"), "{block}"); // dedented, then unwrapped
+        assert!(!block.contains("> question") && !block.contains("done"));
     }
 
     // ── separator ──

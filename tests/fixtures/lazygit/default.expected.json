@@ -9,6 +9,10 @@
           "text": "M a.rs"
         },
         {
+          "kind": "Block",
+          "text": " M a.rs\n M b.txt\n?? c.md"
+        },
+        {
           "kind": "Panel",
           "text": "▼ /\n   M a.rs\n   M b.txt\n  ?? c.md"
         },
