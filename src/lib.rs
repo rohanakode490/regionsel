@@ -331,27 +331,51 @@ fn dedent(lines: &mut [String]) {
     }
 }
 
-/// Heuristic: a line that nearly fills the region width continues on the next line,
-/// unless the next line starts a new block (blank, indented, list item).
+/// Heuristic: `prev` was soft-wrapped onto `next` if a word-wrapper would have had to break
+/// there, i.e. the first word of `next` would not have fit on `prev`. That is a much sharper
+/// signal than "the line is nearly full", which also fires on every row of a table.
 /// The terminal's own wrap flag is useless here: TUIs repaint with absolute cursor moves.
+///
+/// Guards against false joins: neither line may contain a column-alignment gap (2+ spaces),
+/// `prev` must be at least half the width and hold more than one word (a column of long paths
+/// is not prose), and `next` must not start a new block (blank, indented, list item).
 fn unwrap_soft_wraps(lines: Vec<String>, width: u16) -> Vec<String> {
-    let threshold = (width as usize * 9) / 10;
+    let width = width as usize;
     let mut out: Vec<String> = Vec::new();
-    let mut prev_full = false;
+    // The previous PHYSICAL line (before any joining): that is what the wrapper saw.
+    let mut prev_phys: Option<String> = None;
     for line in lines {
-        let full = !line.is_empty() && line.chars().count() >= threshold;
-        let starts_block =
-            line.is_empty() || line.starts_with(char::is_whitespace) || looks_like_list_item(&line);
-        if prev_full && !starts_block && !out.is_empty() {
+        let join = match prev_phys.as_ref().filter(|_| !out.is_empty()) {
+            Some(prev) => {
+                let starts_block = line.is_empty()
+                    || line.starts_with(char::is_whitespace)
+                    || looks_like_list_item(&line);
+                let first_word = line.split_whitespace().next().map_or(0, |w| w.chars().count());
+                let prev_len = prev.chars().count();
+                !starts_block
+                    && prev.contains(' ')
+                    && prev_len * 2 >= width
+                    && prev_len + 1 + first_word > width
+                    && !has_alignment_gap(prev)
+                    && !has_alignment_gap(&line)
+            }
+            None => false,
+        };
+        if join {
             let last = out.last_mut().unwrap();
             last.push(' ');
             last.push_str(&line);
         } else {
-            out.push(line);
+            out.push(line.clone());
         }
-        prev_full = full;
+        prev_phys = Some(line);
     }
     out
+}
+
+/// Two or more consecutive spaces inside a line: column alignment, not prose.
+fn has_alignment_gap(s: &str) -> bool {
+    s.trim().contains("  ")
 }
 
 fn looks_like_list_item(s: &str) -> bool {
@@ -843,6 +867,36 @@ mod tests {
         let mut lines = vec!["  é one".to_string(), "    two".to_string(), "".to_string()];
         dedent(&mut lines);
         assert_eq!(lines, vec!["é one", "  two", ""]);
+    }
+
+    fn v(lines: &[&str]) -> Vec<String> {
+        lines.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn unwrap_joins_only_where_the_next_word_would_not_have_fit() {
+        // width 20: "aaaa bbbb cccc dddd" (19) + "eeee" would be 24 > 20 -> wrapped.
+        let out = unwrap_soft_wraps(v(&["aaaa bbbb cccc dddd", "eeee ffff", "next para"]), 20);
+        assert_eq!(out, v(&["aaaa bbbb cccc dddd eeee ffff", "next para"]));
+        // ...but a long-ish line whose next word WOULD have fit is a real line break.
+        let out = unwrap_soft_wraps(v(&["aaaa bbbb cccc", "dd"]), 20);
+        assert_eq!(out, v(&["aaaa bbbb cccc", "dd"]));
+    }
+
+    #[test]
+    fn unwrap_leaves_tables_and_path_lists_alone() {
+        // Aligned columns (2+ spaces), every row nearly full width.
+        let rows = v(&["web-1   1/1   Running   10.0.0.7", "web-2   1/1   Running   10.0.0.8"]);
+        assert_eq!(unwrap_soft_wraps(rows.clone(), 34), rows);
+        // A column of long single tokens.
+        let paths = v(&["src/very/long/path/to/file.rs", "src/very/long/path/to/other.rs"]);
+        assert_eq!(unwrap_soft_wraps(paths.clone(), 30), paths);
+    }
+
+    #[test]
+    fn unwrap_keeps_blank_lines_and_indented_lines() {
+        let out = unwrap_soft_wraps(v(&["aaaa bbbb cccc dddd", "", "eeee ffff gggg hhhh", "  indented"]), 20);
+        assert_eq!(out, v(&["aaaa bbbb cccc dddd", "", "eeee ffff gggg hhhh", "  indented"]));
     }
 
     #[test]
