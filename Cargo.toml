@@ -2,6 +2,7 @@
 name = "regionsel"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.75"
 description = "Region-aware text selection for terminal screens (tmux frontend)"
 
 [lib]

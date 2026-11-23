@@ -435,9 +435,8 @@ fn looks_like_list_item(s: &str) -> bool {
     s.starts_with("- ")
         || s.starts_with("* ")
         || s.starts_with("• ")
-        || s.split_once(". ").map_or(false, |(n, _)| {
-            !n.is_empty() && n.chars().all(|c| c.is_ascii_digit())
-        })
+        || s.split_once(". ")
+            .is_some_and(|(n, _)| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
 }
 
 // ───────────────────────── 5. Facade ─────────────────────────
