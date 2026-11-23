@@ -3,6 +3,7 @@ name = "regionsel"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
+license = "MIT OR Apache-2.0"
 description = "Copy clean text out of full-screen terminal apps: region-aware selection for tmux"
 readme = "README.md"
 keywords = ["tmux", "terminal", "tui", "clipboard", "selection"]
