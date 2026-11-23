@@ -620,13 +620,25 @@ impl Refiner for IndentPrefixDetector {
                 i += 1;
                 continue;
             }
-            let (start, mut last, mut rows) = (i, i, 0);
+            let (mut start, mut last, mut rows) = (i, i, 0);
             while i < indent.len() && (is_body(i) || indent[i].is_none()) {
                 if is_body(i) {
                     last = i;
                     rows += 1;
                 }
                 i += 1;
+            }
+            // The body belongs to the marker row right above it ("● Reply text" over an
+            // indent-2 body): include it, or a copy silently loses the first line.
+            if rows >= 2 && start > 0 && indent[start - 1] == Some(margin) {
+                let r = area.row0 + (start - 1) as u16;
+                let c = area.col0 + margin;
+                if crate::is_marker_glyph(grid.get(r, c).ch)
+                    && grid.get(r, c).width == 1
+                    && grid.get(r, c + 1).ch.is_whitespace()
+                {
+                    start -= 1;
+                }
             }
             if rows >= 2 {
                 out.push(Candidate {
@@ -999,6 +1011,50 @@ mod tests {
             .map(|c| c.outer)
             .collect();
         assert_eq!(blocks, vec![rect(2, 0, 6, 20)]); // trailing blank row excluded
+    }
+
+    fn block_rects(g: &Grid) -> Vec<Rect> {
+        IndentPrefixDetector::default()
+            .refine(g, g.bounds())
+            .iter()
+            .filter(|c| c.kind == RegionKind::Block)
+            .map(|c| c.outer)
+            .collect()
+    }
+
+    #[test]
+    fn a_marker_row_directly_above_the_body_is_part_of_the_block() {
+        let g = grid_lines(
+            &[
+                "x user text",
+                "",
+                "\u{25cf} Reply starts here",
+                "  and goes on",
+                "",
+                "  second para",
+                "",
+                "\u{273b} Baked for 5s",
+            ],
+            30,
+        );
+        assert_eq!(block_rects(&g), vec![rect(2, 0, 6, 30)]); // starts at the marker row
+    }
+
+    #[test]
+    fn marker_followed_by_a_no_break_space_still_counts() {
+        let g = grid_lines(&["\u{276f}\u{a0}draft", "  more", "  last"], 30);
+        assert_eq!(block_rects(&g), vec![rect(0, 0, 3, 30)]);
+    }
+
+    #[test]
+    fn only_a_marker_glyph_directly_above_pulls_the_row_in() {
+        // ASCII prompt char, a bullet, a blank gap, or a plain word: the block starts at the body.
+        for first in ["> Reply", "\u{2022} Reply", "Reply words"] {
+            let g = grid_lines(&[first, "  body one", "  body two"], 30);
+            assert_eq!(block_rects(&g), vec![rect(1, 0, 3, 30)], "{first}");
+        }
+        let g = grid_lines(&["\u{25cf} Reply", "", "  body one", "  body two"], 30);
+        assert_eq!(block_rects(&g), vec![rect(2, 0, 4, 30)]); // blank row between: not attached
     }
 
     #[test]

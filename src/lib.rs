@@ -356,11 +356,57 @@ pub fn extract(grid: &Grid, rect: Rect, opts: &ExtractOptions) -> String {
         })
         .collect();
     // The wrapper that produced the soft wraps had the width MINUS the indent we strip.
-    let removed = if opts.dedent { dedent(&mut lines) } else { 0 };
+    let removed = if opts.dedent {
+        strip_leading_marker(&mut lines);
+        dedent(&mut lines)
+    } else {
+        0
+    };
     if opts.unwrap {
         lines = unwrap_soft_wraps(lines, rect.width().saturating_sub(removed));
     }
     lines.join("\n")
+}
+
+/// A glyph that apps put in front of the FIRST line of an indented body, to label who is
+/// speaking or what the item is (Claude Code's `●` and `❯`, `⏺`, ...). Deliberately narrow:
+/// non-ASCII only (so `$`, `>`, `-`, `*` are never touched), not a list bullet (`•`, `◦`)
+/// because a bullet is content the reader wants to keep, and not a disclosure triangle or arrow
+/// (`▼ ▶ ▸ →`): those are tree-view expanders (lazygit's file tree), where the row is a node,
+/// not a label. This is a heuristic about glyph shapes; the evidence is Claude Code's `●`/`❯`
+/// (see the claude-code fixtures) against lazygit's `▼` (lazygit/default).
+pub(crate) fn is_marker_glyph(c: char) -> bool {
+    !c.is_ascii()
+        && !c.is_alphanumeric()
+        && !c.is_whitespace()
+        && !matches!(c, '•' | '◦' | '▪')
+        && !matches!(c as u32, 0x25B2..=0x25C5 | 0x2190..=0x21FF)
+}
+
+/// If the first line is `<marker> text` and every other non-blank line is indented at least as
+/// far as `text` (a hanging indent), the marker is a label, not content: blank it out so the
+/// dedent that follows lines the first row up with its body.
+fn strip_leading_marker(lines: &mut [String]) {
+    let Some(first) = lines.iter().position(|l| !l.trim().is_empty()) else {
+        return;
+    };
+    let mut it = lines[first].chars();
+    let (Some(m), Some(sep)) = (it.next(), it.next()) else {
+        return;
+    };
+    // Claude Code separates its `❯` from the text with a no-break space, so any whitespace counts.
+    if !is_marker_glyph(m) || !sep.is_whitespace() {
+        return;
+    }
+    let lead = |l: &str| l.chars().take_while(|c| c.is_whitespace()).count();
+    let hangs = lines[first + 1..]
+        .iter()
+        .filter(|l| !l.trim().is_empty())
+        .all(|l| lead(l) >= 2);
+    let has_body = lines[first + 1..].iter().any(|l| !l.trim().is_empty());
+    if hangs && has_body {
+        lines[first] = format!("  {}", lines[first].chars().skip(2).collect::<String>());
+    }
 }
 
 /// Remove the common leading whitespace and return how many columns were removed. Counted in
@@ -1116,6 +1162,55 @@ mod tests {
         let mut lines = vec!["  é one".to_string(), "    two".to_string(), "".to_string()];
         dedent(&mut lines);
         assert_eq!(lines, vec!["é one", "  two", ""]);
+    }
+
+    #[test]
+    fn extract_drops_a_leading_marker_glyph_and_realigns_the_body() {
+        let g = grid_of(&["\u{25cf} Reply line one", "  line two", "", "  next para"]);
+        let opts = ExtractOptions {
+            unwrap: false, // the grid is narrow; this test is about the marker, not wrapping
+            ..ExtractOptions::for_kind(RegionKind::Block)
+        };
+        let t = extract(&g, g.bounds(), &opts);
+        assert_eq!(t, "Reply line one\nline two\n\nnext para");
+    }
+
+    #[test]
+    fn marker_separator_may_be_a_no_break_space() {
+        // Claude Code's input box is `❯` + U+00A0, found in a real capture.
+        let g = grid_of(&["\u{276f}\u{a0}draft one", "  draft two"]);
+        let opts = ExtractOptions {
+            unwrap: false,
+            ..ExtractOptions::for_kind(RegionKind::Block)
+        };
+        assert_eq!(extract(&g, g.bounds(), &opts), "draft one\ndraft two");
+    }
+
+    #[test]
+    fn extract_keeps_markers_that_are_content() {
+        let opts = ExtractOptions::for_kind(RegionKind::Block);
+        // ASCII prompt, list bullet, and a first line with no hanging indent below it.
+        for lines in [
+            vec!["> quote", "  more"],
+            vec!["\u{2022} item", "  more"],
+            vec!["\u{25cf} head", "tail at margin"],
+        ] {
+            let g = grid_of(&lines);
+            let t = extract(&g, g.bounds(), &opts);
+            assert!(t.starts_with(lines[0]), "{lines:?} -> {t:?}");
+        }
+        // Tree expanders are nodes, not labels (lazygit's file tree).
+        for glyph in ['\u{25bc}', '\u{25b6}', '\u{2192}'] {
+            let first = format!("{glyph} dir");
+            let g = grid_of(&[first.as_str(), "  a.rs", "  b.rs"]);
+            assert!(
+                extract(&g, g.bounds(), &opts).starts_with(&first),
+                "{glyph}"
+            );
+        }
+        // A lone marker line has no body to hang: untouched.
+        let g = grid_of(&["\u{25cf} just one line"]);
+        assert_eq!(extract(&g, g.bounds(), &opts), "\u{25cf} just one line");
     }
 
     fn v(lines: &[&str]) -> Vec<String> {

@@ -13,11 +13,7 @@
         },
         {
           "kind": "Block",
-          "text": "⎿  Added 2 lines, removed 1 line\n    1 +// Entry point: prints a greeting.\n    2  fn main() {\n    2 -    println!(\"hello\");\n    3 +    println!(\"hello, world\");\n    4  }"
-        },
-        {
-          "kind": "Paragraph",
-          "text": "● Update(main.rs)\n  ⎿  Added 2 lines, removed 1 line\n      1 +// Entry point: prints a greeting.\n      2  fn main() {\n      2 -    println!(\"hello\");\n      3 +    println!(\"hello, world\");\n      4  }"
+          "text": "Update(main.rs)\n⎿  Added 2 lines, removed 1 line\n    1 +// Entry point: prints a greeting.\n    2  fn main() {\n    2 -    println!(\"hello\");\n    3 +    println!(\"hello, world\");\n    4  }"
         },
         {
           "kind": "Pane",
@@ -37,11 +33,7 @@
         },
         {
           "kind": "Block",
-          "text": "⎿  Added 2 lines, removed 1 line\n    1 +// Entry point: prints a greeting.\n    2  fn main() {\n    2 -    println!(\"hello\");\n    3 +    println!(\"hello, world\");\n    4  }"
-        },
-        {
-          "kind": "Paragraph",
-          "text": "● Update(main.rs)\n  ⎿  Added 2 lines, removed 1 line\n      1 +// Entry point: prints a greeting.\n      2  fn main() {\n      2 -    println!(\"hello\");\n      3 +    println!(\"hello, world\");\n      4  }"
+          "text": "Update(main.rs)\n⎿  Added 2 lines, removed 1 line\n    1 +// Entry point: prints a greeting.\n    2  fn main() {\n    2 -    println!(\"hello\");\n    3 +    println!(\"hello, world\");\n    4  }"
         },
         {
           "kind": "Pane",
@@ -61,7 +53,7 @@
         },
         {
           "kind": "Paragraph",
-          "text": "● I updated main.rs so the greeting is now \"hello, world\", and added the comment // Entry\n  point: prints a greeting. above main. I haven't compiled or run it."
+          "text": "I updated main.rs so the greeting is now \"hello, world\", and added the comment // Entry point: prints a greeting. above main. I haven't compiled or run it."
         },
         {
           "kind": "Pane",
